@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo Lab — AES Visualizer</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="aes-app.js"></script>
+    <script defer src="aes-tabs.js"></script>
+    <script defer src="aes-enhancements.js"></script>
+    <script defer src="i18n.js"></script>
+</head>
+  <body>
+
+    <div class="bg-grid" aria-hidden="true"></div>
+
+    <div class="page-shell">
+
+      <header class="hero">
+        <div>
+          <a href="index.html" class="section-back">← Inicio</a>
+          <div class="hero-badge" id="heroBadge">AES-128 · AES-192 · AES-256</div>
+          <p class="eyebrow" id="eyebrow">Cifrado simétrico por bloques</p>
+          <h1 id="title">Demo Lab</h1>
+          <p class="hero-copy" id="heroCopy">
+            Ejecutá AES paso a paso. Observá el estado interno en cada transformación
+            y comparás ejecuciones para estudiar el efecto avalancha.
+          </p>
+        </div>
+        <div class="hero-tools">
+          <label class="lang-switch">
+            <span id="langLabel">Idioma</span>
+            <select id="langSelect">
+              <option value="es">Español</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+        </div>
+      </header>
+
+      <main class="layout">
+
+        <nav class="tabs" aria-label="Secciones principales">
+          <button type="button" class="tab-btn active" data-tab="studio" id="tabStudio">Práctica</button>
+          <button type="button" class="tab-btn" data-tab="compare" id="tabCompare">Comparar</button>
+          <button type="button" class="tab-btn" data-tab="learn" id="tabLearn">Aprender</button>
+        </nav>
+
+        <!-- ── Callout técnico AES ── -->
+        <details class="op-callout" style="--op-accent:var(--accent)">
+          <summary>AES en protocolos y malware</summary>
+          <div class="op-callout-body">
+            <ul class="op-callout-list">
+              <li><strong>TLS 1.3:</strong> <code>TLS_AES_256_GCM_SHA384</code> — AES-256 en modo GCM, nonce de 96 bits, tag GHASH de 128 bits. La cipher suite negociada aparece en el handshake que analizás en Wireshark o JA3.</li>
+              <li><strong>Ransomware moderno:</strong> LockBit 3.0, BlackCat/ALPHV y la mayoría usan AES-128-CBC o AES-256-GCM para cifrar archivos. La clave AES se cifra con RSA/ECDH (hybrid encryption) — por eso el descifrado requiere la clave privada del atacante.</li>
+              <li><strong>DFIR / análisis de memoria:</strong> si el malware no limpia la clave AES del heap antes de terminar, es recuperable con Volatility (<code>vol malfind</code> + búsqueda de patrones AES-NI). El Key Schedule expandido tiene una firma reconocible de 176/208/240 bytes.</li>
+              <li><strong>Cifrado de disco:</strong> BitLocker (AES-128/256-XTS), LUKS (AES-256-XTS), FileVault. En triage DFIR, el header del volumen identifica el algoritmo y el modo.</li>
+            </ul>
+            <a class="op-callout-link" href="https://xavimape.github.io/clase-criptografia/cases/case-04-ransomware-activity/index.html" target="_blank" rel="noopener">
+              → Caso SOC 04: Ransomware Activity
+            </a>
+          </div>
+        </details>
+
+        <!-- ── PRÁCTICA ── -->
+        <section class="card controls" data-panel="studio">
+          <h2 id="controlsTitle">Entradas y control</h2>
+          <div class="field-grid">
+            <label>
+              <span id="keySizeLabel">Tamaño de clave</span>
+              <select id="keySize">
+                <option value="128">AES-128</option>
+                <option value="192">AES-192</option>
+                <option value="256">AES-256</option>
+              </select>
+            </label>
+            <label>
+              <span id="inputModeLabel">Modo de entrada</span>
+              <select id="inputMode">
+                <option value="hex">Hex</option>
+                <option value="text">Texto</option>
+              </select>
+            </label>
+            <label class="span-2">
+              <span id="keyLabel">Clave (hex)</span>
+              <input id="keyInput" type="text" spellcheck="false" />
+            </label>
+            <label class="span-2">
+              <span id="plaintextLabel">Texto plano</span>
+              <input id="plaintextInput" type="text" spellcheck="false" />
+            </label>
+          </div>
+          <div class="button-row">
+            <button id="randomKeyBtn" type="button">Clave aleatoria</button>
+            <button id="randomPlainBtn" type="button">Texto aleatorio</button>
+            <button id="startBtn" type="button" class="primary">Iniciar</button>
+            <button id="resetBtn" type="button">Reiniciar</button>
+          </div>
+          <div class="button-row mode-row">
+            <label><input type="radio" name="mode" value="step" checked /> <span id="modeStep">Paso</span></label>
+            <label><input type="radio" name="mode" value="auto" /> <span id="modeAuto">Auto</span></label>
+            <label><input type="radio" name="mode" value="fast" /> <span id="modeFast">Rápido</span></label>
+            <label class="speed-control">
+              <span id="speedLabel">Velocidad</span>
+              <input id="speed" type="range" min="0.2" max="3" step="0.1" value="1" />
+              <span id="speedValue">1.0x</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="card viz" data-panel="studio">
+          <div class="section-head">
+            <h2 id="vizTitle">Visualización</h2>
+            <div class="button-row compact">
+              <button id="prevBtn" type="button">← Prev</button>
+              <button id="nextBtn" type="button">Next →</button>
+              <button id="copyBtn" type="button">Copiar ciphertext</button>
+              <button id="exportBtn" type="button">Exportar JSON</button>
+            </div>
+          </div>
+          <div class="status-row">
+            <div class="status-pill" id="stepCounter">Paso 0/0</div>
+            <div class="status-pill" id="roundInfo">-</div>
+            <div class="status-pill" id="phaseInfo">-</div>
+          </div>
+          <div class="matrix-grid">
+            <div class="matrix-panel">
+              <h3 id="beforeTitle">ESTADO ANTES</h3>
+              <pre id="beforeMatrix" class="matrix">-</pre>
+            </div>
+            <div class="matrix-panel arrow-panel">
+              <div class="arrow">↓</div>
+              <div class="phase-tag" id="phaseTag">-</div>
+              <div class="arrow">↓</div>
+            </div>
+            <div class="matrix-panel">
+              <h3 id="afterTitle">ESTADO DESPUÉS</h3>
+              <pre id="afterMatrix" class="matrix">-</pre>
+            </div>
+          </div>
+          <div class="subgrid">
+            <article class="mini-card">
+              <h3 id="roundKeyTitle">CLAVE DE RONDA</h3>
+              <pre id="roundKeyMatrix" class="matrix">-</pre>
+            </article>
+            <article class="mini-card">
+              <h3 id="explanationTitle">EXPLICACIÓN</h3>
+              <div id="explanationBox" class="prose"></div>
+            </article>
+          </div>
+          <article class="mini-card">
+            <h3 id="changesTitle">Posiciones cambiadas</h3>
+            <div id="changesBox" class="changes"></div>
+          </article>
+        </section>
+
+        <!-- ── COMPARAR ── -->
+        <section class="card compare" data-panel="compare" hidden>
+          <h2 id="compareTitle">Modo Comparación</h2>
+          <div class="field-grid compare-grid">
+            <label class="span-2">
+              <span id="compareKey1Label">Ejecución 1 — Clave</span>
+              <input id="compareKey1" type="text" spellcheck="false" />
+            </label>
+            <label class="span-2">
+              <span id="comparePlain1Label">Texto plano</span>
+              <input id="comparePlain1" type="text" spellcheck="false" />
+            </label>
+            <label class="span-2">
+              <span id="compareKey2Label">Ejecución 2 — Clave</span>
+              <input id="compareKey2" type="text" spellcheck="false" />
+            </label>
+            <label class="span-2">
+              <span id="comparePlain2Label">Texto plano</span>
+              <input id="comparePlain2" type="text" spellcheck="false" />
+            </label>
+          </div>
+          <div class="button-row">
+            <button id="compareBtn" type="button" class="primary">Comparar</button>
+          </div>
+          <pre id="compareOutput" class="output">-</pre>
+        </section>
+
+        <!-- ── APRENDER ── -->
+        <div class="learn-tabs" role="tablist" aria-label="Secciones de aprendizaje" data-panel="learn" hidden>
+          <button type="button" class="learn-btn active" data-learn-tab="guide" id="learnGuideBtn">Guía</button>
+          <button type="button" class="learn-btn" data-learn-tab="glossary" id="learnGlossaryBtn">Glosario</button>
+        </div>
+
+        <section class="card guide" data-panel="learn" hidden>
+          <div class="section-head">
+            <h2 id="guideTitle">Guía educativa</h2>
+          </div>
+          <div id="guideContent" class="guide-content"></div>
+        </section>
+
+        <section class="card glossary" data-panel="learn" hidden>
+          <div class="section-head">
+            <h2 id="glossaryTitle">Glosario y fórmulas</h2>
+            <div class="chip-row">
+              <span class="chip">GF(2^8)</span>
+              <span class="chip">S-box</span>
+              <span class="chip">Rcon</span>
+            </div>
+          </div>
+          <div class="glossary-tools">
+            <label class="glossary-filter">
+              <span id="glossaryFilterLabel">Filtrar términos</span>
+              <input id="glossaryFilter" type="search" placeholder="S-box, GF(2^8), avalanche..." />
+            </label>
+            <div id="glossaryCategories" class="category-row" aria-label="Categorías del glosario"></div>
+          </div>
+          <div id="glossaryContent" class="glossary-grid"></div>
+        </section>
+
+      </main>
+    </div>
+  </body>
+</html>

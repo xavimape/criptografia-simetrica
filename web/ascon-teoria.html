@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teoría — ASCON-128a Visualizer</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous" />
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <div class="slides-shell slides-shell--ascon">
+
+    <header style="margin-bottom:1.5rem">
+      <a href="index.html" class="section-back">← Inicio</a>
+      <div class="hero-badge">ASCON-128a · Teoría</div>
+    </header>
+
+    <!-- ── Slide 1 ── -->
+    <section class="slide active" id="slide-1">
+      <div class="slide-header">
+        <span class="slide-num">01 / 08</span>
+        <h2>¿Qué es ASCON-128a?</h2>
+      </div>
+      <div class="diagram-box" style="font-size:.9rem">
+┌─────────────────────────────────────────────────────────┐
+│  ASCON-128a — Authenticated Encryption with             │
+│              Associated Data (AEAD)                     │
+├─────────────────────────────────────────────────────────┤
+│  Entradas : Key (128 bits)  + Nonce (128 bits)          │
+│           + Associated Data (variable, no cifrado)      │
+│           + Plaintext (variable)                        │
+│                                                         │
+│  Salidas  : Ciphertext (= |Plaintext|)                  │
+│           + Tag de autenticación (128 bits)             │
+└─────────────────────────────────────────────────────────┘
+      </div>
+      <div class="key-points">
+        <div class="key-point">
+          <strong>AEAD:</strong> Cifra el plaintext Y autentica tanto el ciphertext como
+          los datos asociados (metadatos visibles pero intocables).
+        </div>
+        <div class="key-point">
+          <strong>Ganador CAESAR 2019:</strong> Seleccionado entre 57 candidatos como
+          el algoritmo de cifrado autenticado recomendado para entornos con restricciones
+          (IoT, sensores, embebidos).
+        </div>
+        <div class="key-point">
+          <strong>NIST Lightweight Crypto:</strong> Finalista del proceso de estandarización
+          NIST para criptografía ligera. Diseñado en IAIK (TU Graz, Austria).
+        </div>
+        <div class="key-point">
+          <strong>Sin padding costoso:</strong> Internamente usa una permutación sponge
+          eficiente — baja latencia, bajo consumo de energía.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Slide 2 ── -->
+    <section class="slide" id="slide-2">
+      <div class="slide-header">
+        <span class="slide-num">02 / 08</span>
+        <h2>Estado interno: 5 × 64 bits</h2>
+      </div>
+      <div class="diagram-box">
+Estado = [ x0 | x1 | x2 | x3 | x4 ]  →  320 bits totales
+
+Inicialización:
+  x0 = IV  = 0x80400c0600000000  (parámetros del algoritmo)
+  x1 = Key_high  (bits 127–64 de la clave)
+  x2 = Key_low   (bits  63– 0 de la clave)
+  x3 = Nonce_high
+  x4 = Nonce_low
+
+IV descodificada:
+  0x80 = tamaño de clave (128 bits)
+  0x40 = tasa (rate) = 128 bits por bloque
+  0x0c = rondas pa = 12
+  0x06 = rondas pb = 6
+      </div>
+      <div class="key-points">
+        <div class="key-point">
+          <strong>Capacidad:</strong> Los 192 bits inferiores del estado (x2–x4 parcial)
+          actúan como capacidad y nunca se exponen directamente — garantizan seguridad.
+        </div>
+        <div class="key-point">
+          <strong>Rate (tasa):</strong> Los 128 bits superiores del estado (x0–x1) son
+          el "rate" — la parte que interactúa con los datos en cada paso de absorción/extracción.
+        </div>
+        <div class="key-point">
+          <strong>Construcción Sponge:</strong> ASCON es una esponja dúplex: absorbe datos
+          y exprime resultados usando la misma permutación, alternando según la fase.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Slide 3 ── -->
+    <section class="slide" id="slide-3">
+      <div class="slide-header">
+        <span class="slide-num">03 / 08</span>
+        <h2>S-box de 5 bits</h2>
+      </div>
+      <div class="diagram-box">
+Entrada: una columna vertical de 5 bits (1 bit de cada x0–x4)
+Operación (64 columnas en paralelo):
+
+  Paso 1 — Pre-mezcla:
+    x0 ^= x4;  x4 ^= x3;  x2 ^= x1
+
+  Paso 2 — AND-NOT (5 operaciones):
+    t0 = x0 & ~x1    t1 = x1 & ~x2
+    t2 = x2 & ~x3    t3 = x3 & ~x4
+    t4 = x4 & ~x0
+
+  Paso 3 — XOR final:
+    x0 ^= t1;  x1 ^= t2;  x2 ^= t3
+    x3 ^= t4;  x4 ^= t0
+
+  Paso 4 — Post-mezcla:
+    x1 ^= x0;  x0 ^= x4;  x3 ^= x2;  x2 = ~x2
+      </div>
+      <div class="key-points">
+        <div class="key-point">
+          <strong>Sin tablas:</strong> Usa solo AND, NOT y XOR → implementable en hardware
+          con pocos transistores y en software sin acceso a memoria (resistente a timing attacks).
+        </div>
+        <div class="key-point">
+          <strong>No linealidad:</strong> Las operaciones AND introducen no-linealidad,
+          haciendo imposible describir la S-box con ecuaciones lineales.
+        </div>
+        <div class="key-point">
+          <strong>64 en paralelo:</strong> Como opera bit a bit sobre los 5 registros,
+          se aplica simultáneamente a las 64 posiciones de bit — paralelismo masivo.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Slide 4 ── -->
+    <section class="slide" id="slide-4">
+      <div class="slide-header">
+        <span class="slide-num">04 / 08</span>
+        <h2>Capa lineal — Difusión</h2>
+      </div>
+      <p style="text-align:center;padding:.5rem 0">
+        $$\begin{aligned}
+          x_0 &\leftarrow x_0 \oplus \mathrm{ROL}(x_0,\,19) \oplus \mathrm{ROL}(x_0,\,28) \\
+          x_1 &\leftarrow x_1 \oplus \mathrm{ROL}(x_1,\,61) \oplus \mathrm{ROL}(x_1,\,39) \\
+          x_2 &\leftarrow x_2 \oplus \mathrm{ROL}(x_2,\,1)  \oplus \mathrm{ROL}(x_2,\,6)  \\
+          x_3 &\leftarrow x_3 \oplus \mathrm{ROL}(x_3,\,10) \oplus \mathrm{ROL}(x_3,\,17) \\
+          x_4 &\leftarrow x_4 \oplus \mathrm{ROL}(x_4,\,7)  \oplus \mathrm{ROL}(x_4,\,41)
+        \end{aligned}$$
+      </p>
+      <div class="diagram-box">
+Capa lineal — rotaciones por registro (ROL = rotate left de 64 bits):
+  Cada xi se mezcla con 2 copias rotadas de sí mismo.
+  Las constantes son distintas por registro → sin simetría explotable.
+      </div>
+      <div class="key-points">
+        <div class="key-point">
+          <strong>Difusión intra-registro:</strong> Cada bit de un registro afecta a muchos
+          otros bits del mismo registro tras la rotación y XOR.
+        </div>
+        <div class="key-point">
+          <strong>Difusión inter-registro:</strong> La S-box ya creó dependencias entre
+          registros; la capa lineal amplía esas dependencias dentro de cada uno.
+        </div>
+        <div class="key-point">
+          <strong>MDS implícito:</strong> La combinación S-box + capa lineal alcanza
+          rápidamente full diffusion — cualquier cambio en 1 bit afecta el estado completo
+          en pocas rondas.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Slide 5 ── -->
+    <section class="slide" id="slide-5">
+      <div class="slide-header">
+        <span class="slide-num">05 / 08</span>
+        <h2>Permutaciones p<sub>a</sub> y p<sub>b</sub></h2>
+      </div>
+      <div class="diagram-box">
+Una ronda ASCON = Constante RC ⊕ x2  →  S-box  →  Capa lineal
+
+Constantes de ronda RC (aplicadas a x2):
+  r0=0xf0  r1=0xe1  r2=0xd2  r3=0xc3
+  r4=0xb4  r5=0xa5  r6=0x96  r7=0x87
+  r8=0x78  r9=0x69  r10=0x5a  r11=0x4b
+
+pa = 12 rondas (índices 0–11)  — máxima seguridad
+pb =  6 rondas (índices 6–11)  — velocidad en datos
+
+Uso:
+  pa → Inicialización, Finalización
+  pa → Cifrado (ASCON-128a usa pa para mayor seguridad)
+  pb → Absorción de AD
+      </div>
+      <div class="key-points">
+        <div class="key-point">
+          <strong>Diferencia ASCON-128 vs -128a:</strong> ASCON-128 usa pb (6R) en cifrado
+          con bloques de 64 bits (rate=64). ASCON-128a usa pa (12R) con bloques de 128 bits
+          (rate=128) — el doble de throughput al procesar mensajes largos.
+        </div>
+        <div class="key-point">
+          <strong>RC evitan simetría:</strong> Las constantes de ronda distintas hacen
+          que cada ronda sea única — sin puntos fijos ni simetría explotable en la permutación.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Slide 6 ── -->
+    <section class="slide" id="slide-6">
+      <div class="slide-header">
+        <span class="slide-num">06 / 08</span>
+        <h2>AEAD — Datos Asociados</h2>
+      </div>
+      <div class="diagram-box">
+Associated Data (AD) = datos autenticados pero NO cifrados
+
+Ejemplos de AD:
+  • Cabeceras de paquetes de red (IP, puerto, protocolo)
+  • Metadatos de mensajes (timestamp, ID de sesión)
+  • Identificadores de dispositivo en IoT
+
+Proceso de absorción:
+  Para cada bloque de 128 bits de AD:
+    1. Aplicar padding ASCON (bit '1' + ceros)
+    2. Estado[x0] ⊕= bloque_AD
+    3. Aplicar pb (6 rondas)
+  Al final: Estado[x4] ⊕= 1  (domain separation)
+      </div>
+      <div class="key-points">
+        <div class="key-point">
+          <strong>¿Por qué AD?</strong> El receptor puede verificar que los metadatos
+          no fueron alterados, sin necesidad de cifrarlos (eficiencia).
+        </div>
+        <div class="key-point">
+          <strong>Domain separation:</strong> El XOR final (x4 ⊕ 1) garantiza que la
+          fase de AD y la de cifrado produzcan estados internos distintos aunque
+          los datos sean iguales.
+        </div>
+        <div class="key-point">
+          <strong>AD vacío:</strong> Si no hay AD, igual se aplica el domain separation.
+          El estado avanza directamente a la fase de cifrado.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Slide 7 ── -->
+    <section class="slide" id="slide-7">
+      <div class="slide-header">
+        <span class="slide-num">07 / 08</span>
+        <h2>Las 4 fases del algoritmo</h2>
+      </div>
+      <div class="diagram-box">
+┌──────────────────────────────────────────────────────────┐
+│ 1. INICIALIZACIÓN                                        │
+│    Estado = IV ‖ Key ‖ Nonce                             │
+│    → pa(12 rondas)                                       │
+│    → x3 ⊕= Key_high ; x4 ⊕= Key_low                    │
+├──────────────────────────────────────────────────────────┤
+│ 2. ABSORCIÓN AD                                          │
+│    Para cada bloque AD de 128 bits:                      │
+│      x0‖x1 ⊕= bloque_AD_padded → pb(6 rondas)          │
+│    x4 ⊕= 1  (domain separation)                         │
+├──────────────────────────────────────────────────────────┤
+│ 3. CIFRADO                                               │
+│    Para cada bloque PT de 128 bits:                      │
+│      CT = x0‖x1 ⊕ PT  (extracción)                     │
+│      x0‖x1 = CT        (actualizar estado)              │
+│      → pa(12 rondas)                                     │
+├──────────────────────────────────────────────────────────┤
+│ 4. FINALIZACIÓN                                          │
+│    x1 ⊕= Key_high ; x2 ⊕= Key_low                      │
+│    → pa(12 rondas)                                       │
+│    Tag = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low)             │
+└──────────────────────────────────────────────────────────┘
+      </div>
+      <div class="key-points">
+        <div class="key-point">
+          <strong>Secuencial:</strong> Cada fase depende del estado producido por la anterior.
+          No se puede paralelizar entre fases.
+        </div>
+        <div class="key-point">
+          <strong>Key al inicio y al final:</strong> La clave aparece en la inicialización
+          y en la finalización — esto liga el tag a la clave, imposibilitando la falsificación
+          sin conocerla.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Slide 8 ── -->
+    <section class="slide" id="slide-8">
+      <div class="slide-header">
+        <span class="slide-num">08 / 08</span>
+        <h2>Tag de autenticación y seguridad</h2>
+      </div>
+      <div class="diagram-box">
+Tag (128 bits) = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low)
+
+Para descifrar y verificar:
+  1. Recalcular todo el proceso con Key, Nonce, AD, CT
+  2. Comparar tag calculado con tag recibido
+  3. ¿Iguales? → mensaje auténtico e íntegro → aceptar PT
+     ¿Distintos? → mensaje alterado o clave errónea → rechazar
+
+Propiedades de seguridad:
+  • Confidencialidad : IND-CCA2  (128 bits de seguridad)
+  • Integridad/Auth  : INT-CTXT  (128 bits de seguridad)
+  • Seguridad nonce  : Nonce debe ser único por (Key, mensaje)
+      </div>
+      <div class="key-points">
+        <div class="key-point">
+          <strong>Reutilización de nonce (nonce misuse):</strong> Si se usa el mismo nonce
+          dos veces con la misma clave, el atacante puede recuperar el plaintext haciendo XOR
+          de los dos ciphertexts. El nonce DEBE ser único.
+        </div>
+        <div class="key-point">
+          <strong>Comparación de tags:</strong> Siempre compará tags en tiempo constante
+          (evitando timing attacks). Nunca uses comparación byte-a-byte con early exit.
+        </div>
+        <div class="key-point">
+          <strong>Uso en producción:</strong> Para aplicaciones reales usá una librería
+          auditada (libsodium, Bouncy Castle, etc.). Esta implementación es educativa.
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Navegación ── -->
+    <nav class="slide-nav" aria-label="Navegación de diapositivas">
+      <button class="slide-nav-btn" id="btn-prev" disabled onclick="changeSlide(-1)">← Anterior</button>
+      <div class="slide-dots" id="slide-dots" role="tablist"></div>
+      <button class="slide-nav-btn" id="btn-next" onclick="changeSlide(1)">Siguiente →</button>
+    </nav>
+
+  </div>
+
+  <script>
+    const TOTAL   = 8;
+    let current   = 1;
+    const dotsEl  = document.getElementById('slide-dots');
+
+    // Crear dots
+    for (let i = 1; i <= TOTAL; i++) {
+      const d = document.createElement('button');
+      d.className    = 'slide-dot' + (i === 1 ? ' active' : '');
+      d.setAttribute('aria-label', `Slide ${i}`);
+      d.setAttribute('role', 'tab');
+      d.onclick = () => goTo(i);
+      dotsEl.appendChild(d);
+    }
+
+    function goTo(n) {
+      document.getElementById(`slide-${current}`).classList.remove('active');
+      dotsEl.children[current - 1].classList.remove('active');
+      current = Math.max(1, Math.min(TOTAL, n));
+      document.getElementById(`slide-${current}`).classList.add('active');
+      dotsEl.children[current - 1].classList.add('active');
+      document.getElementById('btn-prev').disabled = current === 1;
+      const nextBtn = document.getElementById('btn-next');
+      if (current === TOTAL) {
+        nextBtn.textContent = '↩ Demo Lab';
+        nextBtn.onclick = () => { window.location.href = 'ascon-demo.html'; };
+      } else {
+        nextBtn.textContent = 'Siguiente →';
+        nextBtn.onclick = () => changeSlide(1);
+        nextBtn.disabled = false;
+      }
+    }
+
+    function changeSlide(dir) { goTo(current + dir); }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+      if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+    });
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '\\(', right: '\\)', display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

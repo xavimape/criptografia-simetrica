@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recursos — AES Visualizer</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <div class="container">
+
+    <header class="hero">
+      <a href="index.html" class="section-back">← Inicio</a>
+      <div class="hero-badge">Módulo · Recursos</div>
+      <h1>Recursos AES</h1>
+      <p>Material de referencia para el estudio del Advanced Encryption Standard — estándares, herramientas, lecturas y vectores de prueba.</p>
+    </header>
+
+    <main>
+
+      <div class="recursos-section">
+        <p class="accesos-label">Estándares y especificaciones</p>
+        <nav class="card-grid">
+
+          <a href="https://csrc.nist.gov/publications/detail/fips/197/final" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">📄</span>
+            <span class="card-label">FIPS 197</span>
+            <span class="card-desc">Especificación oficial de AES publicada por NIST (2001)</span>
+          </a>
+
+          <a href="https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core128.pdf" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">🧮</span>
+            <span class="card-label">Vectores NIST 128</span>
+            <span class="card-desc">Ejemplos de referencia para validar implementaciones AES-128</span>
+          </a>
+
+          <a href="https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core256.pdf" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">🧮</span>
+            <span class="card-label">Vectores NIST 256</span>
+            <span class="card-desc">Ejemplos de referencia para AES-256 con todas las rondas</span>
+          </a>
+
+          <a href="https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38a.pdf" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">📋</span>
+            <span class="card-label">SP 800-38A</span>
+            <span class="card-desc">Modos de operación: ECB, CBC, CFB, OFB, CTR</span>
+          </a>
+
+        </nav>
+      </div>
+
+      <div class="recursos-section">
+        <p class="accesos-label">Herramientas interactivas</p>
+        <nav class="card-grid">
+
+          <a href="https://www.cryptool.org/en/cto/aes-step-by-step" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">🔬</span>
+            <span class="card-label">CrypTool — AES</span>
+            <span class="card-desc">Visualización paso a paso de rondas AES online</span>
+          </a>
+
+          <a href="https://aes.cryptosmith.com/" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">🖥️</span>
+            <span class="card-label">AES Cryptosmith</span>
+            <span class="card-desc">Explorador interactivo de la S-box y operaciones GF(2⁸)</span>
+          </a>
+
+          <a href="https://formaestudio.com/rijndaelinspector/" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">🔍</span>
+            <span class="card-label">Rijndael Inspector</span>
+            <span class="card-desc">Inspector visual de expansión de clave y estado interno</span>
+          </a>
+
+          <a href="aes-demo.html" class="card">
+            <span class="card-icon">🖥️</span>
+            <span class="card-label">Demo Lab (local)</span>
+            <span class="card-desc">Visualizador de este proyecto — AES paso a paso en el navegador</span>
+          </a>
+
+        </nav>
+      </div>
+
+      <div class="recursos-section">
+        <p class="accesos-label">Lecturas recomendadas</p>
+        <nav class="card-grid">
+
+          <a href="https://en.wikipedia.org/wiki/Advanced_Encryption_Standard" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">🌐</span>
+            <span class="card-label">Wikipedia — AES</span>
+            <span class="card-desc">Descripción técnica completa con pseudocódigo y referencias</span>
+          </a>
+
+          <a href="https://www.youtube.com/watch?v=O4xNJsjtN6E" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">▶️</span>
+            <span class="card-label">AES — Computerphile</span>
+            <span class="card-desc">Video explicativo del funcionamiento interno de AES</span>
+          </a>
+
+          <a href="https://www.youtube.com/watch?v=mlzxpkdXP58" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">▶️</span>
+            <span class="card-label">GF(2⁸) explicado</span>
+            <span class="card-desc">Matemáticas de campo finito usadas en MixColumns</span>
+          </a>
+
+          <a href="https://crypto.stackexchange.com/questions/tagged/aes" class="card" target="_blank" rel="noopener">
+            <span class="card-icon">💬</span>
+            <span class="card-label">Crypto StackExchange</span>
+            <span class="card-desc">Preguntas frecuentes sobre AES respondidas por expertos</span>
+          </a>
+
+        </nav>
+      </div>
+
+      <div class="recursos-section">
+        <p class="accesos-label">Cheatsheets</p>
+        <nav class="card-grid">
+
+          <a href="aes-teoria.html" class="card">
+            <span class="card-icon">📚</span>
+            <span class="card-label">Slides AES</span>
+            <span class="card-desc">Diapositivas explicativas de este proyecto: estado, transformaciones, rondas</span>
+          </a>
+
+          <a class="card card--secondary" href="#" onclick="return false;">
+            <span class="card-icon">📋</span>
+            <span class="card-label">Cheatsheet AES</span>
+            <span class="card-desc">S-box, Rcon, MixColumns — próximamente</span>
+          </a>
+
+          <a class="card card--secondary" href="#" onclick="return false;">
+            <span class="card-icon">🗂️</span>
+            <span class="card-label">Modos de operación</span>
+            <span class="card-desc">ECB, CBC, CTR, GCM — comparativa visual — próximamente</span>
+          </a>
+
+        </nav>
+      </div>
+
+    </main>
+
+  </div>
+
+</body>
+</html>

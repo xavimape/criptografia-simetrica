@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recursos — Hashing e Integridad</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="page-shell">
+
+  <header class="hero">
+    <div>
+      <a href="index.html" class="section-back">&larr; Inicio</a>
+      <div class="hero-badge" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:var(--accent-hash)">Hashing &middot; MD5 &middot; SHA-2 &middot; SHA-3 &middot; HMAC</div>
+      <p class="eyebrow" style="color:var(--accent-hash)">Referencias y recursos</p>
+      <h1>Recursos — Hashing e Integridad</h1>
+      <p class="hero-copy">Estandares, implementaciones, herramientas y lectura aplicada para SOC y DFIR.</p>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ── Estandares ── -->
+    <section class="card recursos-section">
+      <h2 style="color:var(--accent-hash)">Estandares y especificaciones</h2>
+      <div class="resource-list">
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">FIPS</span>
+            <h3>FIPS 180-4 — Secure Hash Standard (SHA-2)</h3>
+          </div>
+          <p>Especificacion oficial de SHA-224, SHA-256, SHA-384, SHA-512 y variantes. Documento de referencia NIST para SHA-2.</p>
+          <a href="https://csrc.nist.gov/publications/detail/fips/180/4/final" target="_blank" rel="noopener">csrc.nist.gov &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">FIPS</span>
+            <h3>FIPS 202 — SHA-3 Standard</h3>
+          </div>
+          <p>Especificacion de SHA3-224, SHA3-256, SHA3-384, SHA3-512 y SHAKE128/SHAKE256 basados en la permutacion Keccak.</p>
+          <a href="https://csrc.nist.gov/publications/detail/fips/202/final" target="_blank" rel="noopener">csrc.nist.gov &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">RFC</span>
+            <h3>RFC 2104 — HMAC</h3>
+          </div>
+          <p>Definicion de HMAC (Hash-based Message Authentication Code). La construccion ipad/opad que se usa en JWT, TLS y APIs REST.</p>
+          <a href="https://datatracker.ietf.org/doc/html/rfc2104" target="_blank" rel="noopener">datatracker.ietf.org &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">RFC</span>
+            <h3>RFC 5869 — HKDF (HMAC-based Key Derivation Function)</h3>
+          </div>
+          <p>Especifica HKDF, basado en HMAC. Usado en TLS 1.3 para derivacion de claves de trafico (handshake, application).</p>
+          <a href="https://datatracker.ietf.org/doc/html/rfc5869" target="_blank" rel="noopener">datatracker.ietf.org &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">NIST SP</span>
+            <h3>NIST SP 800-131A Rev.2 — Transitioning Cryptographic Algorithms</h3>
+          </div>
+          <p>Define que MD5 y SHA-1 estan prohibidos para funciones de seguridad. Referencia para auditar configuraciones.</p>
+          <a href="https://csrc.nist.gov/publications/detail/sp/800/131a/rev-2/final" target="_blank" rel="noopener">csrc.nist.gov &rarr;</a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Implementaciones ── -->
+    <section class="card recursos-section">
+      <h2 style="color:var(--accent-hash)">Implementaciones de referencia</h2>
+      <div class="resource-list">
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">Python</span>
+            <h3>hashlib — stdlib Python</h3>
+          </div>
+          <p>Libreria estandar con MD5, SHA-1, SHA-256, SHA-512, SHA3-256, BLAKE2. Usa OpenSSL internamente. Siempre preferir sobre implementaciones manuales.</p>
+          <a href="https://docs.python.org/3/library/hashlib.html" target="_blank" rel="noopener">docs.python.org &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">Web API</span>
+            <h3>Web Crypto API — SubtleCrypto.digest()</h3>
+          </div>
+          <p>API nativa del navegador para SHA-1, SHA-256, SHA-384, SHA-512. Sin dependencias externas. No incluye SHA-3 ni MD5.</p>
+          <a href="https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest" target="_blank" rel="noopener">MDN &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">C / OpenSSL</span>
+            <h3>OpenSSL EVP_DigestInit / SHA256()</h3>
+          </div>
+          <p>Implementacion de produccion para hashing en C/C++. Incluye todas las variantes SHA-2, SHA-3, BLAKE2 y HMAC.</p>
+          <a href="https://www.openssl.org/docs/man3.0/man3/EVP_DigestInit.html" target="_blank" rel="noopener">openssl.org &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">Keccak</span>
+            <h3>Keccak Team — Reference Implementation</h3>
+          </div>
+          <p>Implementacion de referencia oficial del equipo Keccak/SHA-3. Incluye codigo C optimizado y vectores de prueba.</p>
+          <a href="https://keccak.team/software.html" target="_blank" rel="noopener">keccak.team &rarr;</a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Herramientas SOC / DFIR ── -->
+    <section class="card recursos-section">
+      <h2 style="color:var(--accent-hash)">Herramientas SOC y DFIR</h2>
+      <div class="resource-list">
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">Threat Intel</span>
+            <h3>VirusTotal — busqueda por hash</h3>
+          </div>
+          <p>Permite buscar muestras de malware por MD5, SHA-1 y SHA-256. Herramienta fundamental para correlacion de IOCs en SOC L1/L2.</p>
+          <a href="https://www.virustotal.com/gui/home/search" target="_blank" rel="noopener">virustotal.com &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">DFIR</span>
+            <h3>sha256sum / certutil / Get-FileHash</h3>
+          </div>
+          <p>Herramientas nativas para calcular hashes en Linux/macOS (<code>sha256sum</code>), Windows CMD (<code>certutil -hashfile</code>) y PowerShell (<code>Get-FileHash</code>).</p>
+          <a href="https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/get-filehash" target="_blank" rel="noopener">PowerShell docs &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">DFIR</span>
+            <h3>Autopsy / FTK — integridad de evidencia</h3>
+          </div>
+          <p>Las suites forenses calculan automaticamente SHA-256 de cada evidencia adquirida para garantizar la cadena de custodia.</p>
+          <a href="https://www.autopsy.com/" target="_blank" rel="noopener">autopsy.com &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">EDR / SIEM</span>
+            <h3>Sysmon — Event ID 1 (Process Create)</h3>
+          </div>
+          <p>Sysmon registra el hash SHA-256 de cada proceso creado. Permite correlacion directa con IOCs de plataformas de threat intelligence.</p>
+          <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon" target="_blank" rel="noopener">learn.microsoft.com &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">Password</span>
+            <h3>Hashcat — password auditing</h3>
+          </div>
+          <p>Herramienta de auditoria de passwords. Permite demostrar la debilidad de hashes planos (MD5, SHA-1, SHA-256 sin salt) frente a ataques de diccionario y rainbow tables.</p>
+          <a href="https://hashcat.net/hashcat/" target="_blank" rel="noopener">hashcat.net &rarr;</a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Lectura aplicada ── -->
+    <section class="card recursos-section">
+      <h2 style="color:var(--accent-hash)">Lectura aplicada</h2>
+      <div class="resource-list">
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">Paper</span>
+            <h3>SHAttered — SHA-1 Collision (Google / CWI, 2017)</h3>
+          </div>
+          <p>Demostracion practica de la primera colision SHA-1. Dos PDFs con contenido diferente y el mismo SHA-1. Incluye codigo de verificacion y vectores.</p>
+          <a href="https://shattered.io/" target="_blank" rel="noopener">shattered.io &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">NIST</span>
+            <h3>NIST Hash Function Competition — SHA-3 Selection Report</h3>
+          </div>
+          <p>Informe oficial sobre el proceso de seleccion de SHA-3. Explica los criterios de seguridad, rendimiento y diseño que llevaron a elegir Keccak.</p>
+          <a href="https://csrc.nist.gov/projects/hash-functions/sha-3-project" target="_blank" rel="noopener">csrc.nist.gov &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">SOC</span>
+            <h3>Hunting con hashes — MITRE ATT&amp;CK</h3>
+          </div>
+          <p>Tecnicas de deteccion y hunting basadas en hashes de artefactos maliciosos. T1027 (Obfuscation) y T1036 (Masquerading) incluyen ejemplos de correlacion por hash.</p>
+          <a href="https://attack.mitre.org/techniques/T1036/" target="_blank" rel="noopener">attack.mitre.org &rarr;</a>
+        </div>
+
+        <div class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(16,185,129,0.12);color:var(--accent-hash)">Libro</span>
+            <h3>Serious Cryptography — Jean-Philippe Aumasson</h3>
+          </div>
+          <p>Capitulos 6-7 cubren funciones hash, HMAC y aplicaciones practicas. Recomendado para analistas que quieren ir mas alla de la teoria superficial.</p>
+          <a href="https://nostarch.com/seriouscrypto" target="_blank" rel="noopener">nostarch.com &rarr;</a>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>

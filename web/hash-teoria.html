@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teoria — Hashing e Integridad</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous" />
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="page-shell">
+
+  <header class="hero">
+    <div>
+      <a href="index.html" class="section-back">&larr; Inicio</a>
+      <div class="hero-badge" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:var(--accent-hash)">Hashing &middot; MD5 &middot; SHA-2 &middot; SHA-3 &middot; HMAC</div>
+      <p class="eyebrow" style="color:var(--accent-hash)">Teoria e internos</p>
+      <h1>Funciones Hash e Integridad</h1>
+      <p class="hero-copy">8 diapositivas: desde Merkle-Damgard hasta el rol del hashing en SOC y DFIR.</p>
+    </div>
+  </header>
+
+  <main class="layout" style="grid-template-columns:1fr">
+
+    <!-- Slide 1 -->
+    <section class="card slide-card" style="border-left:3px solid var(--accent-hash)">
+      <div class="slide-num" style="color:var(--accent-hash)">01 / 08</div>
+      <h2>Que es una funcion hash criptografica?</h2>
+      <div class="slide-body">
+        <p>
+          Una <strong>funcion hash criptografica</strong> toma una entrada de longitud
+          arbitraria y produce una salida de longitud fija llamada <em>digest</em> o <em>resumen</em>.
+        </p>
+        <p>Tres propiedades fundamentales de seguridad:</p>
+        <ul>
+          <li><strong>Resistencia a preimagen:</strong> dado H, no es factible encontrar M tal que hash(M) = H.</li>
+          <li><strong>Resistencia a segunda preimagen:</strong> dado M1, no es factible encontrar M2 ≠ M1 con el mismo hash.</li>
+          <li><strong>Resistencia a colisiones:</strong> no es factible encontrar M1 ≠ M2 tal que hash(M1) = hash(M2).</li>
+        </ul>
+        <div class="diagram-box" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+Mensaje (longitud variable)
+  "hello world"        →  b94d27b9...  (SHA-256, 256 bits)
+  "Hello world"        →  a4f17b20...  (SHA-256, 256 bits)
+  archivo de 4 GB      →  3e23e816...  (SHA-256, 256 bits)
+
+         ↕ 1 bit de diferencia → ~50% de bits del digest distintos
+                        (efecto avalancha)
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2 -->
+    <section class="card slide-card" style="border-left:3px solid var(--accent-hash)">
+      <div class="slide-num" style="color:var(--accent-hash)">02 / 08</div>
+      <h2>Construccion Merkle-Damgard</h2>
+      <div class="slide-body">
+        <p>
+          La mayoria de las funciones hash clasicas (MD5, SHA-1, SHA-2) usan la
+          <strong>construccion iterativa Merkle-Damgard</strong>: se divide el mensaje
+          en bloques de tamano fijo, se aplica una funcion de compresion a cada bloque
+          junto con el estado anterior, y el resultado final es el hash.
+        </p>
+        <div class="diagram-box" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+Mensaje + padding
+  ┌──────┬──────┬──────┬──────┐
+  │  B0  │  B1  │  B2  │  B3  │   bloques de 512 bits
+  └──────┴──────┴──────┴──────┘
+     │        │        │        │
+  H0─┤   H1──┤   H2──┤   H3──┤
+     f()      f()      f()      f()
+                                 └── digest final
+        </div>
+        <p>
+          <strong>Vulnerabilidad inherente:</strong> la construccion Merkle-Damgard
+          es susceptible a <em>ataques de extension de longitud</em> (length extension
+          attack). SHA-3 y HMAC resuelven este problema.
+        </p>
+      </div>
+    </section>
+
+    <!-- Slide 3 -->
+    <section class="card slide-card" style="border-left:3px solid var(--accent-hash)">
+      <div class="slide-num" style="color:var(--accent-hash)">03 / 08</div>
+      <h2>MD5 — roto pero ubicuo</h2>
+      <div class="slide-body">
+        <p>
+          MD5 (1991) produce un digest de <strong>128 bits</strong> (32 caracteres hex).
+          Opera sobre bloques de 512 bits con un estado de cuatro palabras de 32 bits (A, B, C, D).
+          Aplica 4 rondas de 16 operaciones cada una usando funciones logicas F, G, H, I.
+        </p>
+        <ul>
+          <li><strong>2004:</strong> Wang &amp; Yu demuestran colisiones analiticas.</li>
+          <li><strong>2012:</strong> malware Flame usa colisiones MD5 para falsificar certificados de Microsoft.</li>
+          <li><strong>Hoy:</strong> colisiones en segundos en hardware comun. <strong>No usar para seguridad.</strong></li>
+        </ul>
+        <p>
+          Aun aparece en: <em>checksums de descargas no criticas</em>, sistemas legado,
+          y como identificador de ficheros en plataformas de threat intelligence
+          (MD5 de malware en VirusTotal).
+        </p>
+        <div class="diagram-box" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+Ejemplo de colision MD5:
+  file1.bin  →  79054025255fb1a26e4bc422aef54eb4  (identico!)
+  file2.bin  →  79054025255fb1a26e4bc422aef54eb4  (contenido diferente)
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4 -->
+    <section class="card slide-card" style="border-left:3px solid var(--accent-hash)">
+      <div class="slide-num" style="color:var(--accent-hash)">04 / 08</div>
+      <h2>SHA-1 — obsoleto, pero presente en infraestructura</h2>
+      <div class="slide-body">
+        <p>
+          SHA-1 (1995, FIPS 180-1) produce un digest de <strong>160 bits</strong> (40 hex).
+          Merkle-Damgard con bloques de 512 bits, 80 rondas, estado de 5 palabras de 32 bits.
+        </p>
+        <ul>
+          <li><strong>2005:</strong> Wang et al. reducen la complejidad de colision a 2<sup>69</sup> (teorico).</li>
+          <li><strong>2017:</strong> Google &amp; CWI demuestran colision real — <em>SHAttered</em> — dos PDFs distintos con el mismo SHA-1.</li>
+          <li><strong>NIST SP 800-131A:</strong> prohibido para firmas digitales desde 2013.</li>
+        </ul>
+        <p>
+          Detectar SHA-1 en configuraciones TLS (p.ej. <code>TLS_RSA_WITH_AES_128_CBC_SHA</code>)
+          es una señal de configuracion debil. Los certificados SHA-1 fueron eliminados por
+          navegadores en 2017. Git usa SHA-1 para identificar commits (migracion a SHA-256 en curso).
+        </p>
+        <div class="diagram-box" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+SHA-1 en cipher suite TLS (indicador de debilidad):
+  TLS_RSA_WITH_AES_128_CBC_SHA   ← SHA-1 como HMAC
+  TLS_RSA_WITH_AES_256_CBC_SHA   ← SHA-1 como HMAC
+  TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384  ← SHA-384 (OK)
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5 -->
+    <section class="card slide-card" style="border-left:3px solid var(--accent-hash)">
+      <div class="slide-num" style="color:var(--accent-hash)">05 / 08</div>
+      <h2>SHA-256 — el estandar operativo actual</h2>
+      <div class="slide-body">
+        <p>
+          SHA-256 (SHA-2, FIPS 180-4) produce un digest de <strong>256 bits</strong> (64 hex).
+          Merkle-Damgard con bloques de 512 bits, 64 rondas, ocho palabras de 32 bits en el estado.
+          Las constantes K[0..63] se derivan de las raices cubicas de los primeros 64 numeros primos.
+        </p>
+        <p>En cada ronda se aplican las operaciones:</p>
+        <ul>
+          <li><strong>Ch(e,f,g)</strong> — función de elección: \(Ch(e,f,g) = (e \wedge f) \oplus (\lnot e \wedge g)\)</li>
+          <li><strong>Maj(a,b,c)</strong> — mayoría: \(Maj(a,b,c) = (a \wedge b) \oplus (a \wedge c) \oplus (b \wedge c)\)</li>
+          <li>\(\Sigma_0(a) = ROTR^{2}(a) \oplus ROTR^{13}(a) \oplus ROTR^{22}(a)\) — suma mayor (mezcla a)</li>
+          <li>\(\Sigma_1(e) = ROTR^{6}(e) \oplus ROTR^{11}(e) \oplus ROTR^{25}(e)\) — suma menor (mezcla e)</li>
+          <li>\(\sigma_0(w) = ROTR^{7}(w) \oplus ROTR^{18}(w) \oplus SHR^{3}(w)\) — expansión del message schedule</li>
+        </ul>
+        <div class="diagram-box" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+SHA-256 en uso real:
+  TLS 1.3 cipher suite:  TLS_AES_256_GCM_SHA384
+  JWT header:            {"alg":"HS256"}
+  Bitcoin mining:        SHA-256(SHA-256(block_header))
+  Malware IOC (TI):      sha256: 3e23e8160d2b...
+  DFIR cadena custodia:  sha256sum evidence.dd &gt; evidence.sha256
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6 -->
+    <section class="card slide-card" style="border-left:3px solid var(--accent-hash)">
+      <div class="slide-num" style="color:var(--accent-hash)">06 / 08</div>
+      <h2>SHA-3 / Keccak — construccion esponja</h2>
+      <div class="slide-body">
+        <p>
+          SHA-3 (FIPS 202, 2015) es el ganador del concurso NIST SHA-3 Competition (2007-2012).
+          A diferencia de MD5/SHA-1/SHA-2, no usa la construccion Merkle-Damgard, sino una
+          <strong>construccion esponja</strong> (sponge function) sobre un estado de <strong>1600 bits</strong>.
+        </p>
+        <div class="diagram-box" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+Estado Keccak: 5×5 matriz de lanes de 64 bits (1600 bits total)
+
+FASE ABSORCION:
+  Mensaje (en bloques de rate=136 bytes para SHA3-256)
+  → XOR en los primeros 136 bytes del estado
+  → Aplicar permutacion Keccak-f (24 rondas: θ ρ π χ ι)
+  → Repetir para cada bloque
+
+FASE EXPRIMIDO (SQUEEZE):
+  Extraer los primeros 256 bits del estado → digest
+        </div>
+        <p>
+          Ventajas sobre SHA-2: <strong>resistente a length extension attacks</strong> por diseño,
+          y ofrece variantes como <strong>SHAKE128/SHAKE256</strong> (XOF: salida de longitud variable)
+          y <strong>cSHAKE</strong> para derivacion de claves customizada.
+        </p>
+      </div>
+    </section>
+
+    <!-- Slide 7 -->
+    <section class="card slide-card" style="border-left:3px solid var(--accent-hash)">
+      <div class="slide-num" style="color:var(--accent-hash)">07 / 08</div>
+      <h2>HMAC — autenticacion con hash</h2>
+      <div class="slide-body">
+        <p>
+          <strong>HMAC</strong> (Hash-based Message Authentication Code, RFC 2104) combina
+          una clave secreta con una funcion hash para producir un MAC que autentica tanto
+          el origen como la integridad del mensaje.
+        </p>
+        <p style="text-align:center;padding:.5rem 0">
+          $$HMAC(K, M) = H\!\Bigl((K \oplus opad) \;\Big\|\; H\!\bigl((K \oplus ipad) \;\|\; M\bigr)\Bigr)$$
+        </p>
+        <div class="diagram-box" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+  ipad = 0x36 repetido blocksize veces
+  opad = 0x5C repetido blocksize veces
+
+  1. Si len(K) &gt; blocksize : K = H(K)
+  2. Si len(K) &lt; blocksize : K = K ‖ 0x00...
+  3. inner = H( (K ⊕ ipad) ‖ M )
+  4. HMAC  = H( (K ⊕ opad) ‖ inner )
+        </div>
+        <p>Uso operativo:</p>
+        <ul>
+          <li><strong>JWT (HS256):</strong> firma de tokens con HMAC-SHA256.</li>
+          <li><strong>TLS 1.2 PRF:</strong> derivacion de claves de sesion.</li>
+          <li><strong>HKDF:</strong> TLS 1.3 usa HMAC como base del KDF de dos fases (Extract+Expand).</li>
+          <li><strong>API authentication:</strong> AWS SigV4, webhooks GitHub usan HMAC-SHA256.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Slide 8 -->
+    <section class="card slide-card" style="border-left:3px solid var(--accent-hash)">
+      <div class="slide-num" style="color:var(--accent-hash)">08 / 08</div>
+      <h2>Hashing en ciberseguridad operativa</h2>
+      <div class="slide-body">
+        <p>El hashing no es solo teoria — aparece constantemente en el trabajo de un analista SOC:</p>
+        <ul>
+          <li>
+            <strong>Threat Intelligence / IOCs:</strong> los Indicators of Compromise son hashes
+            MD5/SHA-1/SHA-256 de muestras de malware. Plataformas como VirusTotal, MISP y
+            OpenCTI indexan por hash.
+          </li>
+          <li>
+            <strong>DFIR — cadena de custodia:</strong> se calcula el SHA-256 de cada evidencia
+            digital antes y despues del analisis para demostrar integridad. Herramientas: FTK, Autopsy, sha256sum.
+          </li>
+          <li>
+            <strong>SIEM/EDR:</strong> reglas de deteccion basadas en hash de procesos, DLLs
+            y scripts. Sysmon Event ID 1 incluye el hash SHA-256 del proceso lanzado.
+          </li>
+          <li>
+            <strong>TLS cipher suites:</strong> el sufijo de la suite indica el hash del HMAC
+            (SHA256, SHA384). TLS 1.3 usa HKDF sobre SHA-256 o SHA-384 segun la suite.
+          </li>
+          <li>
+            <strong>Password storage:</strong> bcrypt, Argon2, PBKDF2 son KDFs basados en hash
+            con factor de coste. Un hash plano SHA-256 de password es vulnerable a rainbow tables.
+          </li>
+        </ul>
+        <div class="diagram-box" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+Sysmon Event ID 1 (Process Create):
+  Hashes: SHA256=3e23e8160d2b4b8e...
+  Image:  C:\Windows\System32\cmd.exe
+  → Correlacion directa con IOCs de threat intel
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '\\(', right: '\\)', display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    });
+  </script>
+</body>
+</html>

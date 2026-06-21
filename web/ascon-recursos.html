@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recursos — ASCON-128a Visualizer</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <div class="container">
+
+    <header class="hero">
+      <a href="index.html" class="section-back">← Inicio</a>
+      <div class="hero-badge hero-badge--ascon">Módulo · Recursos ASCON</div>
+      <h1>Recursos ASCON-128a</h1>
+      <p>Material de referencia para el estudio de ASCON-128a — especificación, implementaciones de referencia, lecturas y herramientas.</p>
+    </header>
+
+    <main>
+
+      <div class="recursos-section">
+        <p class="accesos-label accesos-label--ascon">Especificación y estándares</p>
+        <nav class="card-grid">
+
+          <a href="https://ascon.iaik.tugraz.at/index.html" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">📄</span>
+            <span class="card-label">ASCON — Sitio oficial</span>
+            <span class="card-desc">Especificación completa, vectores de prueba y recursos de los autores (IAIK, TU Graz)</span>
+          </a>
+
+          <a href="https://csrc.nist.gov/projects/lightweight-cryptography" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">🏛️</span>
+            <span class="card-label">NIST Lightweight Crypto</span>
+            <span class="card-desc">Proceso oficial de estandarización NIST para criptografía ligera — ASCON fue finalista</span>
+          </a>
+
+          <a href="https://competitions.cr.yp.to/caesar-submissions.html" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">🏆</span>
+            <span class="card-label">CAESAR Competition</span>
+            <span class="card-desc">Competencia donde ASCON-128a fue seleccionado como ganador en 2019</span>
+          </a>
+
+          <a href="https://eprint.iacr.org/2021/1574" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">📋</span>
+            <span class="card-label">ASCON v1.2 — ePrint</span>
+            <span class="card-desc">Especificación técnica completa v1.2 en IACR ePrint (2021/1574)</span>
+          </a>
+
+        </nav>
+      </div>
+
+      <div class="recursos-section">
+        <p class="accesos-label accesos-label--ascon">Implementaciones de referencia</p>
+        <nav class="card-grid">
+
+          <a href="https://github.com/ascon/ascon-c" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">⚙️</span>
+            <span class="card-label">ascon/ascon-c</span>
+            <span class="card-desc">Implementación oficial en C de los autores — incluye vectores de prueba y benchmarks</span>
+          </a>
+
+          <a href="https://github.com/meichlseder/pyascon" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">🐍</span>
+            <span class="card-label">pyascon</span>
+            <span class="card-desc">Implementación Python de referencia por Maria Eichlseder (autora de ASCON)</span>
+          </a>
+
+          <a href="ascon-demo.html" class="card card--ascon">
+            <span class="card-icon">🖥️</span>
+            <span class="card-label">Demo Lab (este proyecto)</span>
+            <span class="card-desc">Visualizador educativo ASCON-128a en JavaScript — sin dependencias externas</span>
+          </a>
+
+          <a href="https://www.cryptool.org" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">🔬</span>
+            <span class="card-label">CrypTool</span>
+            <span class="card-desc">Suite educativa de criptografía — incluye visualizaciones de primitivas modernas</span>
+          </a>
+
+        </nav>
+      </div>
+
+      <div class="recursos-section">
+        <p class="accesos-label accesos-label--ascon">Lecturas recomendadas</p>
+        <nav class="card-grid">
+
+          <a href="https://en.wikipedia.org/wiki/Ascon_(cipher)" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">🌐</span>
+            <span class="card-label">Wikipedia — ASCON</span>
+            <span class="card-desc">Descripción técnica del algoritmo con pseudocódigo y contexto histórico</span>
+          </a>
+
+          <a href="https://en.wikipedia.org/wiki/Authenticated_encryption" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">🔐</span>
+            <span class="card-label">AEAD — Wikipedia</span>
+            <span class="card-desc">Qué es el cifrado autenticado con datos asociados: conceptos y construcciones</span>
+          </a>
+
+          <a href="https://en.wikipedia.org/wiki/Sponge_function" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">🧽</span>
+            <span class="card-label">Construcción Sponge</span>
+            <span class="card-desc">La estructura sponge/dúplex que subyace al diseño de ASCON</span>
+          </a>
+
+          <a href="https://crypto.stackexchange.com/questions/tagged/ascon" class="card card--ascon" target="_blank" rel="noopener">
+            <span class="card-icon">💬</span>
+            <span class="card-label">Crypto StackExchange</span>
+            <span class="card-desc">Preguntas frecuentes sobre ASCON respondidas por expertos en criptografía</span>
+          </a>
+
+        </nav>
+      </div>
+
+      <div class="recursos-section">
+        <p class="accesos-label accesos-label--ascon">Materiales del proyecto</p>
+        <nav class="card-grid">
+
+          <a href="ascon-teoria.html" class="card card--ascon">
+            <span class="card-icon">📖</span>
+            <span class="card-label">Slides ASCON</span>
+            <span class="card-desc">8 diapositivas: estado, S-box, capa lineal, permutaciones y fases AEAD</span>
+          </a>
+
+          <a class="card card--ascon card--secondary" href="#" onclick="return false;">
+            <span class="card-icon">📋</span>
+            <span class="card-label">Cheatsheet ASCON</span>
+            <span class="card-desc">RC, IV, constantes de rotación, tabla de fases — próximamente</span>
+          </a>
+
+          <a class="card card--ascon card--secondary" href="#" onclick="return false;">
+            <span class="card-icon">⚖️</span>
+            <span class="card-label">AES vs ASCON</span>
+            <span class="card-desc">Comparativa técnica: bloque vs sponge, modos, casos de uso — próximamente</span>
+          </a>
+
+        </nav>
+      </div>
+
+    </main>
+
+  </div>
+
+</body>
+</htm

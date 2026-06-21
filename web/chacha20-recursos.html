@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recursos ChaCha20-Poly1305</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="page-shell">
+
+  <header class="hero">
+    <div>
+      <a href="index.html" class="section-back">&larr; Inicio</a>
+      <div class="hero-badge" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:var(--accent-chacha)">Recursos</div>
+      <p class="eyebrow" style="color:var(--accent-chacha)">Lectura y referencias</p>
+      <h1>Recursos ChaCha20-Poly1305</h1>
+      <p class="hero-copy">
+        Estandares, implementaciones de referencia y recursos para profundizar en el cifrado
+        mas usado en comunicaciones modernas.
+      </p>
+    </div>
+  </header>
+
+  <main class="layout" style="grid-template-columns:1fr">
+
+    <!-- Estandares oficiales -->
+    <section class="card">
+      <h2 style="color:var(--accent-chacha)">Estandares oficiales</h2>
+      <div class="resource-list">
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(245,158,11,0.12);color:var(--accent-chacha)">RFC</span>
+            <h3>RFC 8439 &mdash; ChaCha20 and Poly1305 for IETF Protocols</h3>
+          </div>
+          <p>El estandar definitivo. Incluye descripciones formales, vectores de prueba completos y consideraciones de seguridad. Sustituye al RFC 7539.</p>
+          <a class="resource-link" href="https://www.rfc-editor.org/rfc/rfc8439" target="_blank" rel="noopener">
+            rfc-editor.org/rfc/rfc8439 &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(245,158,11,0.12);color:var(--accent-chacha)">Paper</span>
+            <h3>ChaCha, a variant of Salsa20 &mdash; D.J. Bernstein (2008)</h3>
+          </div>
+          <p>El paper original de Bernstein donde presenta ChaCha como mejora de Salsa20, con analisis de difusion y justificacion de las constantes de rotacion.</p>
+          <a class="resource-link" href="https://cr.yp.to/chacha/chacha-20080128.pdf" target="_blank" rel="noopener">
+            cr.yp.to/chacha &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(245,158,11,0.12);color:var(--accent-chacha)">Paper</span>
+            <h3>The Poly1305-AES Message-Authentication Code &mdash; Bernstein (2005)</h3>
+          </div>
+          <p>Diseno original de Poly1305 (version AES). El RFC 8439 usa Poly1305 puro (sin AES), con la clave derivada del keystream de ChaCha20.</p>
+          <a class="resource-link" href="https://cr.yp.to/mac/poly1305-20050329.pdf" target="_blank" rel="noopener">
+            cr.yp.to/mac/poly1305 &rarr;
+          </a>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- Implementaciones de referencia -->
+    <section class="card">
+      <h2 style="color:var(--accent-chacha)">Implementaciones de referencia</h2>
+      <div class="resource-list">
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(52,211,153,0.12);color:#34d399">Python</span>
+            <h3>pyca/cryptography &mdash; ChaCha20Poly1305</h3>
+          </div>
+          <p>La libreria criptografica mas usada en Python. Implementa ChaCha20-Poly1305 sobre libsodium / OpenSSL. Uso recomendado en produccion.</p>
+          <a class="resource-link" href="https://cryptography.io/en/latest/hazmat/primitives/aead/#cryptography.hazmat.primitives.ciphers.aead.ChaCha20Poly1305" target="_blank" rel="noopener">
+            cryptography.io/chacha20poly1305 &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(96,165,250,0.12);color:#60a5fa">C / C++</span>
+            <h3>libsodium &mdash; crypto_aead_chacha20poly1305</h3>
+          </div>
+          <p>La implementacion C de referencia. Optimizada con intrinsics NEON y AVX2. La base de muchos protocolos modernos (WireGuard, Signal, minisign).</p>
+          <a class="resource-link" href="https://doc.libsodium.org/secret-key_cryptography/aead/chacha20-poly1305" target="_blank" rel="noopener">
+            doc.libsodium.org/chacha20-poly1305 &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(245,158,11,0.12);color:var(--accent-chacha)">Rust</span>
+            <h3>chacha20poly1305 crate &mdash; RustCrypto</h3>
+          </div>
+          <p>Implementacion pura en Rust, sin unsafe code, con soporte para ChaCha20Poly1305 y XChaCha20Poly1305 (nonce de 192 bits). Compatible con no-std.</p>
+          <a class="resource-link" href="https://docs.rs/chacha20poly1305" target="_blank" rel="noopener">
+            docs.rs/chacha20poly1305 &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(96,165,250,0.12);color:#60a5fa">Go</span>
+            <h3>golang.org/x/crypto/chacha20poly1305</h3>
+          </div>
+          <p>La implementacion oficial de Go. Incluye XChaCha20-Poly1305 (nonce extendido), usada por Cloudflare y otros en produccion.</p>
+          <a class="resource-link" href="https://pkg.go.dev/golang.org/x/crypto/chacha20poly1305" target="_blank" rel="noopener">
+            pkg.go.dev/chacha20poly1305 &rarr;
+          </a>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- Usos reales -->
+    <section class="card">
+      <h2 style="color:var(--accent-chacha)">Donde se usa en la practica</h2>
+      <div class="resource-list">
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(168,85,247,0.12);color:#a855f7">VPN</span>
+            <h3>WireGuard &mdash; ChaCha20-Poly1305 como unico cipher</h3>
+          </div>
+          <p>WireGuard usa ChaCha20-Poly1305 exclusivamente (sin negociacion). La decision elimina toda la superficie de ataque de la negociacion de cifrado de OpenVPN / IPSec.</p>
+          <a class="resource-link" href="https://www.wireguard.com/protocol/" target="_blank" rel="noopener">
+            wireguard.com/protocol &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(52,211,153,0.12);color:#34d399">TLS 1.3</span>
+            <h3>RFC 8446 &mdash; TLS_CHACHA20_POLY1305_SHA256</h3>
+          </div>
+          <p>TLS 1.3 incluye TLS_CHACHA20_POLY1305_SHA256 como cipher suite mandatorio. Todos los navegadores modernos lo priorizan en dispositivos sin AES-NI.</p>
+          <a class="resource-link" href="https://www.rfc-editor.org/rfc/rfc8446" target="_blank" rel="noopener">
+            rfc-editor.org/rfc/rfc8446 &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(245,158,11,0.12);color:var(--accent-chacha)">Mensajeria</span>
+            <h3>Signal Protocol &mdash; Double Ratchet + ChaCha20</h3>
+          </div>
+          <p>Signal usa ChaCha20-Poly1305 para cifrar mensajes individuales dentro del Double Ratchet. WhatsApp, Messenger y muchos otros implementan el mismo protocolo.</p>
+          <a class="resource-link" href="https://signal.org/docs/specifications/doubleratchet/" target="_blank" rel="noopener">
+            signal.org/docs/doubleratchet &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(96,165,250,0.12);color:#60a5fa">SSH</span>
+            <h3>OpenSSH &mdash; chacha20-poly1305@openssh.com</h3>
+          </div>
+          <p>OpenSSH implementa ChaCha20-Poly1305 desde la version 6.5 (2014). Es el cipher por defecto en muchas distribuciones Linux por su resistencia a padding oracle attacks.</p>
+          <a class="resource-link" href="https://cvsweb.openbsd.org/src/usr.bin/ssh/PROTOCOL.chacha20poly1305" target="_blank" rel="noopener">
+            OpenSSH PROTOCOL.chacha20poly1305 &rarr;
+          </a>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- Herramientas de analisis -->
+    <section class="card">
+      <h2 style="color:var(--accent-chacha)">Herramientas de analisis y aprendizaje</h2>
+      <div class="resource-list">
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(245,158,11,0.12);color:var(--accent-chacha)">Online</span>
+            <h3>CyberChef &mdash; ChaCha / Poly1305</h3>
+          </div>
+          <p>Herramienta online de GCHQ. Permite aplicar ChaCha20 y Poly1305 paso a paso con entradas hex, ideal para verificar implementaciones.</p>
+          <a class="resource-link" href="https://gchq.github.io/CyberChef/" target="_blank" rel="noopener">
+            gchq.github.io/CyberChef &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(52,211,153,0.12);color:#34d399">CLI</span>
+            <h3>OpenSSL 3.x &mdash; enc -chacha20</h3>
+          </div>
+          <p>OpenSSL soporta ChaCha20-Poly1305 desde la version 1.1.0. Permite cifrar archivos desde la linea de comandos y verificar vectores del RFC.</p>
+          <a class="resource-link" href="https://www.openssl.org/docs/man3.0/man1/openssl-enc.html" target="_blank" rel="noopener">
+            openssl.org/docs &rarr;
+          </a>
+        </article>
+
+        <article class="resource-item">
+          <div class="resource-header">
+            <span class="resource-tag" style="background:rgba(245,158,11,0.12);color:var(--accent-chacha)">Curso</span>
+            <h3>Cryptography I &mdash; Dan Boneh (Stanford / Coursera)</h3>
+          </div>
+          <p>El curso mas completo de criptografia aplicada. Cubre stream ciphers, MACs y esquemas AEAD con fundamentos matematicos rigurosos.</p>
+          <a class="resource-link" href="https://www.coursera.org/learn/crypto" target="_blank" rel="noopener">
+            coursera.org/learn/crypto &rarr;
+          </a>
+        </article>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>

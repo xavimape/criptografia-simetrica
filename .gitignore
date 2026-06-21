@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# IDEs y workspaces
+.vscode/
+.idea/
+*.swp
+*.swo
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claves y secretos (nunca subir!)
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.txt
+.env
+
+# Logs
+*.log
+
+# Node (si se usa para tooling)
+node_modules/
+package-lock.json

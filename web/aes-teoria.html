@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teoría AES — AES Visualizer</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous" />
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <div class="slides-shell">
+
+    <a href="index.html" class="section-back" style="position:relative;z-index:1">← Inicio</a>
+
+    <!-- ════════════════════════════════════
+         SLIDE 1 — ¿Qué es AES?
+    ════════════════════════════════════ -->
+    <section class="slide active" id="slide-1">
+      <div class="slide-header">
+        <span class="slide-num">01 / 08</span>
+        <h2>¿Qué es AES?</h2>
+      </div>
+      <div class="slide-body">
+        <div class="slide-text">
+          <p>
+            <strong>AES (Advanced Encryption Standard)</strong> es el algoritmo de cifrado simétrico por bloques
+            más usado en el mundo. Fue seleccionado por el NIST en 2001 tras un concurso público de 5 años,
+            adoptando el cifrado <em>Rijndael</em> diseñado por Joan Daemen y Vincent Rijmen.
+          </p>
+          <p>
+            Opera sobre bloques fijos de <strong>128 bits (16 bytes)</strong>. La clave puede ser de
+            128, 192 o 256 bits, lo que determina la cantidad de rondas: 10, 12 o 14 respectivamente.
+          </p>
+        </div>
+        <div class="diagram-box">Bloque de entrada: 128 bits (16 bytes)
+Tamaños de clave soportados:
+  AES-128 → 10 rondas
+  AES-192 → 12 rondas
+  AES-256 → 14 rondas
+
+Bloque de salida: 128 bits (16 bytes)</div>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">🔒</span>
+            <span>Cifrado <strong>simétrico</strong>: la misma clave cifra y descifra. El intercambio seguro de la clave es responsabilidad del protocolo (ej. TLS).</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">📐</span>
+            <span>Cifrado <strong>por bloques</strong>: el mensaje se divide en bloques de 16 bytes. Si el mensaje es más corto, se aplica <em>padding</em>.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">✅</span>
+            <span>Aprobado por NSA para información clasificada hasta SECRET (AES-128) y TOP SECRET (AES-256). Base de TLS, WPA2, BitLocker, GPG y cientos de protocolos.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         SLIDE 2 — La Matriz Estado
+    ════════════════════════════════════ -->
+    <section class="slide" id="slide-2">
+      <div class="slide-header">
+        <span class="slide-num">02 / 08</span>
+        <h2>La Matriz Estado</h2>
+      </div>
+      <div class="slide-body">
+        <div class="slide-text">
+          <p>
+            AES trabaja internamente sobre una <strong>matriz 4×4 de bytes</strong> llamada <em>state</em>.
+            Los 16 bytes del bloque de entrada se cargan en la matriz <strong>por columnas</strong>:
+            el primer byte va a la posición (fila 0, col 0), el segundo a (fila 1, col 0), etc.
+          </p>
+          <p>
+            Cada ronda transforma esta matriz aplicando cuatro operaciones en secuencia.
+            Al finalizar las rondas, la matriz se vuelve a serializar por columnas para obtener el ciphertext.
+          </p>
+        </div>
+        <div class="diagram-box">Bloque de entrada (16 bytes, en hex):
+  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+
+Cargado en la matriz estado (por columnas):
+  col→  0     1     2     3
+  fila 0:  00    04    08    0c
+  fila 1:  01    05    09    0d
+  fila 2:  02    06    0a    0e
+  fila 3:  03    07    0b    0f
+
+Notación: s[fila][col]  →  s[0][0]=00, s[1][0]=01 ...</div>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">📊</span>
+            <span>La matriz tiene <strong>4 filas × 4 columnas = 16 bytes = 128 bits</strong>. Es la unidad de trabajo de todo el algoritmo.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">↕️</span>
+            <span>El orden de carga <strong>por columnas</strong> (no por filas) es importante: ShiftRows y MixColumns dependen de esta orientación.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         SLIDE 3 — SubBytes
+    ════════════════════════════════════ -->
+    <section class="slide" id="slide-3">
+      <div class="slide-header">
+        <span class="slide-num">03 / 08</span>
+        <h2>SubBytes — Sustitución no lineal</h2>
+      </div>
+      <div class="slide-body">
+        <div class="slide-text">
+          <p>
+            <strong>SubBytes</strong> aplica una sustitución byte a byte usando la <em>S-box</em> (Substitution box),
+            una tabla de 256 entradas precomputada. Dado un byte <em>b</em>, el resultado es <code>SBOX[b]</code>.
+          </p>
+          <p>
+            Matemáticamente, la S-box combina dos operaciones en GF(2⁸): primero calcula la
+            <strong>inversa multiplicativa</strong> del byte, luego aplica una
+            <strong>transformación afín</strong>. Esto introduce no-linealidad — la propiedad que hace
+            a AES resistente a ataques algebraicos y diferenciales.
+          </p>
+        </div>
+        <div class="diagram-box">Ejemplo con el byte 0x53:
+  Inversa en GF(2⁸): 0xca
+  Transformación afín (XOR con 0x63): 0xed
+  → SBOX[0x53] = 0xed  ✓
+
+Fragmento de la S-box (primeras dos filas):
+       0    1    2    3    4    5    6    7
+  0x:  63   7c   77   7b   f2   6b   6f   c5
+  1x:  ca   82   c9   7d   fa   59   47   f0</div>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">🔀</span>
+            <span><strong>No-linealidad</strong>: es imposible describir SubBytes como una operación lineal. Esto rompe la posibilidad de ataques algebraicos directos.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">🛡️</span>
+            <span>La S-box fue diseñada para maximizar la <em>confusión</em> (propiedad de Shannon): cada bit del output depende de muchos bits del input.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">↔️</span>
+            <span>Existe una <strong>S-box inversa</strong> (InvSubBytes) usada en el descifrado para revertir la transformación.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         SLIDE 4 — ShiftRows
+    ════════════════════════════════════ -->
+    <section class="slide" id="slide-4">
+      <div class="slide-header">
+        <span class="slide-num">04 / 08</span>
+        <h2>ShiftRows — Rotación de filas</h2>
+      </div>
+      <div class="slide-body">
+        <div class="slide-text">
+          <p>
+            <strong>ShiftRows</strong> desplaza cíclicamente cada fila de la matriz estado hacia la izquierda
+            una cantidad distinta: fila 0 sin cambio, fila 1 un paso, fila 2 dos pasos, fila 3 tres pasos.
+          </p>
+          <p>
+            Su función es <em>difusión</em>: mezcla los bytes entre distintas columnas. Sin ShiftRows,
+            cada columna se procesaría de forma independiente y AES sería vulnerable a ataques por columnas.
+          </p>
+        </div>
+        <div class="diagram-box">Estado antes de ShiftRows:
+  fila 0:  d4  e0  b8  1e     ← sin desplazamiento
+  fila 1:  27  bf  b4  41     ← desplazar 1
+  fila 2:  11  98  5d  52     ← desplazar 2
+  fila 3:  ae  f1  e5  30     ← desplazar 3
+
+Estado después de ShiftRows:
+  fila 0:  d4  e0  b8  1e     (igual)
+  fila 1:  bf  b4  41  27     (rotó 1 a la izq.)
+  fila 2:  5d  52  11  98     (rotó 2 a la izq.)
+  fila 3:  30  ae  f1  e5     (rotó 3 a la izq.)</div>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">↔️</span>
+            <span>Después de ShiftRows, <strong>cada columna de la matriz contiene bytes de las 4 filas originales</strong>. MixColumns los mezcla todos juntos a continuación.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">🔁</span>
+            <span>Para el descifrado existe <strong>InvShiftRows</strong> que desplaza a la derecha las mismas cantidades.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         SLIDE 5 — MixColumns
+    ════════════════════════════════════ -->
+    <section class="slide" id="slide-5">
+      <div class="slide-header">
+        <span class="slide-num">05 / 08</span>
+        <h2>MixColumns — Difusión en GF(2⁸)</h2>
+      </div>
+      <div class="slide-body">
+        <div class="slide-text">
+          <p>
+            <strong>MixColumns</strong> multiplica cada columna de la matriz estado por una
+            <em>matriz fija de 4×4</em> en el campo de Galois GF(2⁸). Esto hace que
+            cada byte del output dependa de los 4 bytes del input de esa columna.
+          </p>
+          <p>
+            En GF(2⁸), la suma es XOR y la multiplicación se hace módulo el polinomio
+            irreducible \(x^8 + x^4 + x^3 + x + 1\) (valor <code>0x11b</code>).
+            Multiplicar por 2 equivale a un desplazamiento de bits + XOR condicional con <code>0x1b</code>.
+          </p>
+        </div>
+        <div class="diagram-box">Matriz de MixColumns:
+  M = [ 02  03  01  01 ]
+      [ 01  02  03  01 ]
+      [ 01  01  02  03 ]
+      [ 03  01  01  02 ]
+
+gmul(a, 2): (a &lt;&lt; 1) &amp; 0xFF  ⊕  (a &amp; 0x80 ? 0x1b : 0x00)</div>
+        <p style="text-align:center;padding:.5rem 0">
+          $$\begin{aligned}
+            b_0 &amp;= (2 \cdot a_0) \oplus (3 \cdot a_1) \oplus a_2 \oplus a_3 \\
+            b_1 &amp;= a_0 \oplus (2 \cdot a_1) \oplus (3 \cdot a_2) \oplus a_3 \\
+            b_2 &amp;= a_0 \oplus a_1 \oplus (2 \cdot a_2) \oplus (3 \cdot a_3) \\
+            b_3 &amp;= (3 \cdot a_0) \oplus a_1 \oplus a_2 \oplus (2 \cdot a_3)
+          \end{aligned}$$
+        </p>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">🌊</span>
+            <span><strong>Difusión máxima</strong>: cualquier byte del input afecta todos los bytes del output de esa columna. Junto con ShiftRows, un cambio en un byte se propaga a toda la matriz en 2 rondas.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">⚠️</span>
+            <span>MixColumns <strong>se omite en la última ronda</strong> de AES. Esto garantiza que el descifrado sea simétrico al cifrado (InvMixColumns puede aplicarse en el mismo punto).</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         SLIDE 6 — AddRoundKey
+    ════════════════════════════════════ -->
+    <section class="slide" id="slide-6">
+      <div class="slide-header">
+        <span class="slide-num">06 / 08</span>
+        <h2>AddRoundKey — XOR con subclave</h2>
+      </div>
+      <div class="slide-body">
+        <div class="slide-text">
+          <p>
+            <strong>AddRoundKey</strong> combina la matriz estado con la <em>subclave de ronda</em>
+            usando XOR byte a byte. Es la única operación de AES que incorpora directamente material de clave.
+          </p>
+          <p>
+            Sin AddRoundKey, AES sería una permutación pública (sin secreto). Sin las otras tres operaciones,
+            AES sería trivialmente atacable. La seguridad emerge de la <em>combinación</em> de las cuatro.
+          </p>
+        </div>
+        <div class="diagram-box">Estado ⊕ Clave de ronda = Nuevo estado
+
+  Estado:          Clave de ronda:    Resultado:
+  [ a0  a1  a2  a3]   [k0  k1  k2  k3]   [a0⊕k0  a1⊕k1  a2⊕k2  a3⊕k3]
+  [ a4  a5  a6  a7] ⊕ [k4  k5  k6  k7] = [a4⊕k4  a5⊕k5  a6⊕k6  a7⊕k7]
+  [ a8  a9  aa  ab]   [k8  k9  ka  kb]   [ ...                         ]
+  [ ac  ad  ae  af]   [kc  kd  ke  kf]   [ ...                         ]
+
+XOR: propiedad de auto-inversión → a ⊕ k ⊕ k = a
+Por eso el mismo AddRoundKey sirve para cifrar y descifrar.</div>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">🔑</span>
+            <span>AddRoundKey se aplica <strong>antes de la primera ronda</strong> (con la clave original) y <strong>al final de cada ronda</strong> (con la subclave correspondiente). En AES-128 se aplica 11 veces en total.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">⚡</span>
+            <span>XOR es extremadamente rápido en hardware y software. Esto contribuye a que AES sea eficiente incluso en microcontroladores.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         SLIDE 7 — Expansión de Clave
+    ════════════════════════════════════ -->
+    <section class="slide" id="slide-7">
+      <div class="slide-header">
+        <span class="slide-num">07 / 08</span>
+        <h2>Expansión de Clave (Key Schedule)</h2>
+      </div>
+      <div class="slide-body">
+        <div class="slide-text">
+          <p>
+            A partir de la clave original, AES genera <strong>N+1 subclaves de ronda</strong>
+            (una por ronda más la inicial), cada una de 128 bits. Para AES-128 se generan 11 subclaves
+            a partir de 4 palabras de 32 bits (16 bytes).
+          </p>
+          <p>
+            El proceso es iterativo: cada nueva palabra de 4 bytes se deriva XOR-eando la palabra anterior
+            con la que está <em>Nk</em> posiciones antes. Cuando el índice es múltiplo de Nk,
+            se aplica primero <code>RotWord + SubWord + Rcon</code>.
+          </p>
+        </div>
+        <div class="diagram-box">Para AES-128 (Nk=4, Nr=10):
+  Clave original → [w0, w1, w2, w3]
+
+  Para i = 4..43:
+    temp = w[i-1]
+    si (i % 4 == 0):
+      temp = SubWord(RotWord(temp)) ⊕ Rcon[i/4 - 1]
+    w[i] = w[i-4] ⊕ temp
+
+  Subclaves: w[0..3], w[4..7], w[8..11], ... w[40..43]
+
+  Rcon (constantes de ronda):
+  [01, 02, 04, 08, 10, 20, 40, 80, 1b, 36]</div>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">🔄</span>
+            <span><strong>RotWord</strong>: rota los 4 bytes de una palabra un lugar a la izquierda: [a,b,c,d] → [b,c,d,a].</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">🔀</span>
+            <span><strong>SubWord</strong>: aplica la S-box a cada uno de los 4 bytes de la palabra, igual que SubBytes pero sobre una sola palabra.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">📌</span>
+            <span><strong>Rcon</strong>: constantes de ronda derivadas de potencias de 2 en GF(2⁸). Aseguran que cada subclave sea distinta incluso con claves similares.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════
+         SLIDE 8 — Una ronda completa
+    ════════════════════════════════════ -->
+    <section class="slide" id="slide-8">
+      <div class="slide-header">
+        <span class="slide-num">08 / 08</span>
+        <h2>Estructura completa de AES</h2>
+      </div>
+      <div class="slide-body">
+        <div class="slide-text">
+          <p>
+            Ahora que conocés cada pieza, así se ve el algoritmo completo para AES-128:
+            un <em>AddRoundKey</em> inicial, seguido de 9 rondas completas y una ronda final sin MixColumns.
+          </p>
+        </div>
+        <div class="diagram-box">Plaintext (128 bits)
+     │
+     ▼
+AddRoundKey(clave ronda 0)
+     │
+     ├── Ronda 1 ─────────────────────────────
+     │     SubBytes → ShiftRows → MixColumns → AddRoundKey(k1)
+     │
+     ├── Ronda 2..9 (ídem)
+     │
+     └── Ronda 10 (final) ───────────────────
+           SubBytes → ShiftRows → AddRoundKey(k10)
+               ↑ sin MixColumns
+     │
+     ▼
+Ciphertext (128 bits)</div>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">🌊</span>
+            <span><strong>Efecto avalancha</strong>: tras ~2 rondas, un cambio en 1 bit del plaintext o la clave afecta ~50% de los bits del ciphertext. Al finalizar las 10 rondas, el cambio es estadísticamente indistinguible de aleatorio.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">🖥️</span>
+            <span>Podés observar este efecto en tiempo real usando el <a href="aes-demo.html"><strong>Demo Lab</strong></a>: ejecutá dos cifrados con claves que difieran en un solo bit y comparalos.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">📚</span>
+            <span>Para más detalle, consultá los <a href="aes-recursos.html"><strong>Recursos</strong></a>: la especificación FIPS 197 incluye vectores de prueba para verificar cada paso de la implementación.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Navegación de slides ── -->
+    <nav class="slide-nav" aria-label="Navegación de diapositivas">
+      <button class="slide-nav-btn" id="btn-prev" onclick="changeSlide(-1)" disabled>← Anterior</button>
+      <div class="slide-progress" id="dots"></div>
+      <button class="slide-nav-btn primary" id="btn-next" onclick="changeSlide(1)">Siguiente →</button>
+    </nav>
+
+  </div>
+
+  <script>
+    const TOTAL = 8;
+    let current = 1;
+
+    // Construir dots
+    const dotsEl = document.getElementById('dots');
+    for (let i = 1; i <= TOTAL; i++) {
+      const d = document.createElement('button');
+      d.className = 'slide-dot' + (i === 1 ? ' active' : '');
+      d.setAttribute('aria-label', `Diapositiva ${i}`);
+      d.addEventListener('click', () => goTo(i));
+      dotsEl.appendChild(d);
+    }
+
+    function goTo(n) {
+      document.getElementById(`slide-${current}`).classList.remove('active');
+      dotsEl.children[current - 1].classList.remove('active');
+      current = Math.max(1, Math.min(TOTAL, n));
+      document.getElementById(`slide-${current}`).classList.add('active');
+      dotsEl.children[current - 1].classList.add('active');
+      document.getElementById('btn-prev').disabled = current === 1;
+      document.getElementById('btn-next').disabled = current === TOTAL;
+      document.getElementById('btn-next').textContent =
+        current === TOTAL ? '↩ Demo Lab' : 'Siguiente →';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function changeSlide(dir) {
+      if (dir === 1 && current === TOTAL) {
+        window.location.href = 'aes-demo.html';
+        return;
+      }
+      goTo(current + dir);
+    }
+
+    // Teclado: ← →
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+      if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+    });
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '\\(', right: '\\)', display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

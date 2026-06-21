@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo Lab — ASCON-128a Visualizer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="ascon-app.js"></script>
+  <script defer src="ascon-tabs.js"></script>
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="page-shell">
+
+    <header class="hero">
+      <div>
+        <a href="index.html" class="section-back">← Inicio</a>
+        <div class="hero-badge hero-badge--ascon">ASCON-128a · AEAD</div>
+        <p class="eyebrow" style="color:var(--accent-ascon)">Cifrado Autenticado Ligero</p>
+        <h1>Demo Lab ASCON</h1>
+        <p class="hero-copy">
+          Ejecutá ASCON-128a paso a paso: observá cómo el estado interno de 320 bits (x0–x4)
+          evoluciona en cada ronda de inicialización, absorción AD, cifrado y finalización.
+        </p>
+      </div>
+    </header>
+
+    <main class="layout">
+
+      <!-- ── Callout técnico ASCON ── -->
+      <details class="op-callout" style="--op-accent:var(--accent-ascon)">
+        <summary>ASCON en firmware y dispositivos embebidos</summary>
+        <div class="op-callout-body">
+          <ul class="op-callout-list">
+            <li><strong>NIST LWC 2023:</strong> ASCON-128 es el estándar NIST para criptografía liviana. Diseñado para microcontroladores (ARM Cortex-M0, RISC-V, AVR) donde AES tiene un costo de área/energía prohibitivo.</li>
+            <li><strong>Análisis de firmware (DFIR):</strong> en Ghidra o Binwalk, la constante de inicialización de ASCON-128 es <code>0x80400c0600000000</code>. Encontrarla en un binario confirma uso de ASCON. El estado de 320 bits ocupa exactamente 5 registros de 64 bits.</li>
+            <li><strong>Matter protocol (IoT):</strong> candidato para el protocolo de interoperabilidad IoT hogar inteligente. Si analizás tráfico de dispositivos Zigbee 3.0 / Thread en evolución, ASCON puede aparecer en el plano de seguridad.</li>
+            <li><strong>Diferencia clave vs AES:</strong> ASCON es AEAD nativo — no requiere un MAC separado. Un ciphertext sin tag íntegro es inmediatamente inválido (verification failure), simplificando el análisis forense de tráfico alterado.</li>
+          </ul>
+          <a class="op-callout-link" href="https://xavimape.github.io/clase-criptografia/index.html" target="_blank" rel="noopener">
+            → clase-criptografia: Laboratorios SOC
+          </a>
+        </div>
+      </details>
+
+      <!-- Tabs principales -->
+      <nav style="grid-column:1/-1;display:flex;border-bottom:1px solid var(--line);margin-bottom:4px"
+           role="tablist" aria-label="Secciones principales">
+        <button type="button" class="ascon-tab-btn active" data-tab="studio"  aria-selected="true">Práctica</button>
+        <button type="button" class="ascon-tab-btn"        data-tab="compare" aria-selected="false">Comparar</button>
+        <button type="button" class="ascon-tab-btn"        data-tab="learn"   aria-selected="false">Aprender</button>
+      </nav>
+
+      <!-- ====== PRÁCTICA: panel izquierdo (entradas) ====== -->
+      <section class="card controls" data-ascon-panel="studio">
+        <h2>Entradas</h2>
+        <p id="asconError" class="error-banner" hidden></p>
+
+        <div class="field-grid">
+          <label class="span-2">
+            <span>Key <small style="color:var(--muted)">(128 bits = 32 hex)</small></span>
+            <div style="display:flex;gap:6px">
+              <input id="asconKeyInput" type="text" spellcheck="false"
+                     value="000102030405060708090A0B0C0D0E0F" maxlength="32" />
+              <button id="asconRandKeyBtn" type="button" title="Clave aleatoria"
+                      style="flex-shrink:0;padding:0 10px">🎲</button>
+            </div>
+          </label>
+
+          <label class="span-2">
+            <span>Nonce <small style="color:var(--muted)">(128 bits = 32 hex, único por mensaje)</small></span>
+            <div style="display:flex;gap:6px">
+              <input id="asconNonceInput" type="text" spellcheck="false"
+                     value="000102030405060708090A0B0C0D0E0F" maxlength="32" />
+              <button id="asconRandNonceBtn" type="button" title="Nonce aleatorio"
+                      style="flex-shrink:0;padding:0 10px">🎲</button>
+            </div>
+          </label>
+
+          <label class="span-2">
+            <span>Associated Data <small style="color:var(--muted)">(hex, opcional)</small></span>
+            <input id="asconAdInput" type="text" spellcheck="false"
+                   value="606162636465666768696A6B6C6D6E6F" />
+          </label>
+
+          <label class="span-2">
+            <span>Plaintext <small style="color:var(--muted)">(hex, opcional)</small></span>
+            <input id="asconPtInput" type="text" spellcheck="false"
+                   value="4142434445464748" />
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="asconExampleBtn" type="button">Cargar ejemplo</button>
+          <button id="asconStartBtn" type="button"
+                  style="background:var(--accent-ascon);border-color:var(--accent-ascon);
+                         color:#fff;padding:10px 20px;border-radius:8px;border:none;
+                         cursor:pointer;font:inherit;font-weight:600">▶ Cifrar</button>
+          <button id="asconResetBtn" type="button">Reiniciar</button>
+        </div>
+
+        <!-- Resultado final -->
+        <div id="asconResult" hidden
+             style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line)">
+          <p style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                    letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">
+            Resultado final
+          </p>
+          <div style="display:grid;gap:.4rem">
+            <div class="result-field">
+              <span class="result-label">CT</span>
+              <span class="result-val" id="asconCiphertext" style="color:var(--accent-2)">—</span>
+            </div>
+            <div class="result-field">
+              <span class="result-label">Tag</span>
+              <span class="result-val" id="asconTag" style="color:var(--accent-ascon)">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== PRÁCTICA: panel derecho (visualización) ====== -->
+      <section class="card viz" data-ascon-panel="studio">
+
+        <div class="section-head">
+          <h2>Visualización paso a paso</h2>
+          <div class="button-row compact">
+            <button id="asconPrevBtn"   type="button" disabled>← Prev</button>
+            <button id="asconNextBtn"   type="button" disabled>Next →</button>
+            <button id="asconCopyBtn"   type="button">Copiar CT</button>
+            <button id="asconExportBtn" type="button">Exportar JSON</button>
+          </div>
+        </div>
+
+        <!-- Counter + fase -->
+        <div class="status-row">
+          <div class="status-pill" id="asconStepCounter">Paso — / —</div>
+          <div class="status-pill" id="asconPhaseInfo"
+               style="color:var(--accent-ascon)">—</div>
+        </div>
+
+        <!-- Sección visualización (oculta hasta ejecutar) -->
+        <div id="asconVizSection" hidden>
+
+          <!-- Grid antes / operación / después -->
+          <div class="matrix-grid" style="margin-top:.75rem">
+
+            <div class="matrix-panel">
+              <h3 style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                         letter-spacing:.15em;text-transform:uppercase;margin-bottom:.6rem">
+                ESTADO ANTES
+              </h3>
+              <div id="asconBeforeState" class="ascon-state"></div>
+            </div>
+
+            <div class="matrix-panel arrow-panel">
+              <div class="arrow" style="color:var(--accent-ascon)">↓</div>
+              <div class="phase-tag" id="asconPhaseTag"
+                   style="color:var(--accent-ascon);background:var(--accent-ascon-glow);
+                          border-color:var(--accent-ascon-border)">—</div>
+              <div class="arrow" style="color:var(--accent-ascon)">↓</div>
+            </div>
+
+            <div class="matrix-panel">
+              <h3 style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                         letter-spacing:.15em;text-transform:uppercase;margin-bottom:.6rem">
+                ESTADO DESPUÉS
+              </h3>
+              <div id="asconAfterState" class="ascon-state"></div>
+            </div>
+
+          </div>
+
+          <!-- Extra: CT generado / Tag -->
+          <div id="asconExtra"
+               style="margin-top:.75rem;padding:.6rem .9rem;
+                      background:var(--accent-ascon-glow);border:1px solid var(--accent-ascon-border);
+                      border-radius:8px;font-family:var(--mono);font-size:.78rem;
+                      display:flex;gap:.6rem;align-items:flex-start"
+               hidden></div>
+
+          <!-- Explicación + bits cambiados -->
+          <div class="subgrid" style="margin-top:.75rem">
+            <article class="mini-card">
+              <h3 style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                         letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">
+                EXPLICACIÓN
+              </h3>
+              <div id="asconExplanation" class="prose"
+                   style="font-size:.84rem;line-height:1.6"></div>
+            </article>
+            <article class="mini-card">
+              <h3 style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                         letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">
+                BITS CAMBIADOS
+              </h3>
+              <div id="asconChanges" class="changes"></div>
+            </article>
+          </div>
+
+        </div>
+
+        <!-- Placeholder antes de ejecutar -->
+        <p id="asconPlaceholder"
+           style="color:var(--muted);font-size:.85rem;margin-top:1rem">
+          Ingresá los parámetros y presioná
+          <strong style="color:var(--accent-ascon)">▶ Cifrar</strong>
+          para ver el paso a paso de las
+          <strong>~56 transformaciones</strong> internas de ASCON-128a.
+        </p>
+
+      </section>
+
+      <!-- ====== COMPARAR ====== -->
+      <section class="card" data-ascon-panel="compare" hidden
+               style="grid-column:1/-1">
+        <h2>Modo Comparación — Efecto Avalancha</h2>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.75rem">
+          <div>
+            <p style="color:var(--accent-ascon);font-size:.75rem;margin-bottom:.6rem;
+                      font-family:var(--mono);letter-spacing:.1em">▶ EJECUCIÓN 1</p>
+            <label style="display:grid;gap:5px;margin-bottom:.5rem">
+              <span>Key</span>
+              <input id="asconCmpKey1" type="text" spellcheck="false" />
+            </label>
+            <label style="display:grid;gap:5px;margin-bottom:.5rem">
+              <span>Nonce</span>
+              <input id="asconCmpNonce1" type="text" spellcheck="false" />
+            </label>
+            <label style="display:grid;gap:5px">
+              <span>Plaintext</span>
+              <input id="asconCmpPt1" type="text" spellcheck="false"
+                     value="4142434445464748" />
+            </label>
+          </div>
+          <div>
+            <p style="color:var(--accent-ascon);font-size:.75rem;margin-bottom:.6rem;
+                      font-family:var(--mono);letter-spacing:.1em">▶ EJECUCIÓN 2</p>
+            <label style="display:grid;gap:5px;margin-bottom:.5rem">
+              <span>Key</span>
+              <input id="asconCmpKey2" type="text" spellcheck="false" />
+            </label>
+            <label style="display:grid;gap:5px;margin-bottom:.5rem">
+              <span>Nonce</span>
+              <input id="asconCmpNonce2" type="text" spellcheck="false" />
+            </label>
+            <label style="display:grid;gap:5px">
+              <span>Plaintext</span>
+              <input id="asconCmpPt2" type="text" spellcheck="false"
+                     value="4142434445464748" />
+            </label>
+          </div>
+        </div>
+
+        <div class="button-row" style="margin-top:1rem">
+          <button id="asconCompareBtn" type="button"
+                  style="background:var(--accent-ascon);border-color:var(--accent-ascon);
+                         color:#fff;padding:10px 20px;border-radius:8px;border:none;
+                         cursor:pointer;font:inherit;font-weight:600">Comparar</button>
+        </div>
+        <pre id="asconCmpOutput" class="output" style="margin-top:1rem">—</pre>
+      </section>
+
+      <!-- ====== APRENDER ====== -->
+      <div style="grid-column:1/-1;display:flex;border-bottom:1px solid var(--line);
+                  margin-bottom:4px"
+           role="tablist" aria-label="Secciones de aprendizaje"
+           data-ascon-panel="learn" hidden>
+        <button type="button" class="ascon-learn-btn active"
+                data-learn-tab="guide" aria-selected="true">Guía</button>
+      </div>
+
+      <section class="card" data-ascon-panel="learn" data-ascon-learn="guide"
+               hidden style="grid-column:1/-1">
+        <div class="section-head">
+          <h2>Guía educativa ASCON-128a</h2>
+        </div>
+        <div id="asconGuideContent" class="guide-content"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var startBtn = document.getElementById('asconStartBtn');
+      if (startBtn) {
+        startBtn.addEventListener('click', function() {
+          var ph = document.getElementById('asconPlaceholder');
+          if (ph) ph.hidden = true;
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

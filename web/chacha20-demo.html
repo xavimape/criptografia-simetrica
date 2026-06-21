@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo Lab — ChaCha20-Poly1305 Visualizer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="chacha20-app.js"></script>
+  <script defer src="chacha20-tabs.js"></script>
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="page-shell">
+
+    <header class="hero">
+      <div>
+        <a href="index.html" class="section-back">&larr; Inicio</a>
+        <div class="hero-badge" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:var(--accent-chacha)">ChaCha20-Poly1305 &middot; AEAD</div>
+        <p class="eyebrow" style="color:var(--accent-chacha)">Stream Cipher Autenticado</p>
+        <h1>Demo Lab ChaCha20</h1>
+        <p class="hero-copy">
+          Ejecuta ChaCha20-Poly1305 (RFC 8439) paso a paso: observa como la matriz 4x4 de 32 bits
+          evoluciona en cada ronda ARX, como se genera el keystream y como Poly1305 produce el tag.
+        </p>
+      </div>
+    </header>
+
+    <main class="layout">
+
+      <!-- ── Callout técnico ChaCha20 ── -->
+      <details class="op-callout" style="--op-accent:var(--accent-chacha)">
+        <summary>ChaCha20-Poly1305 en tráfico y protocolos</summary>
+        <div class="op-callout-body">
+          <ul class="op-callout-list">
+            <li><strong>TLS 1.3:</strong> <code>TLS_CHACHA20_POLY1305_SHA256</code> — cipher suite preferida en dispositivos sin aceleración AES-NI (móviles, ARM sin extensiones). En Wireshark, el campo <em>Cipher Suite</em> del ServerHello lo identifica. JA3 captura el ID de cipher suite (<code>0x1303</code>) en el fingerprint.</li>
+            <li><strong>WireGuard VPN:</strong> usa exclusivamente ChaCha20-Poly1305 para cifrar paquetes UDP. Identificable por puerto <code>51820/UDP</code> + patrón de handshake de 4 mensajes. Si encontrás tráfico UDP con esa estructura, es WireGuard.</li>
+            <li><strong>Signal Protocol / WhatsApp:</strong> Double Ratchet con ChaCha20-Poly1305. El análisis forense de backups cifrados de WhatsApp usa AES-GCM en la capa de almacenamiento, pero el transporte es ChaCha20.</li>
+            <li><strong>Poly1305 como MAC independiente:</strong> a diferencia de GHASH, Poly1305 no es reutilizable con la misma clave. Si un desarrollador reusa (key, nonce), el MAC pierde su garantía de seguridad — detectable como anomalía en logs de implementación.</li>
+          </ul>
+          <a class="op-callout-link" href="https://xavimape.github.io/clase-criptografia/laboratorios/tls/ja3.html" target="_blank" rel="noopener">
+            → Lab TLS / JA3 Fingerprinting
+          </a>
+        </div>
+      </details>
+
+      <!-- Tabs principales -->
+      <nav style="grid-column:1/-1;display:flex;border-bottom:1px solid var(--line);margin-bottom:4px"
+           role="tablist" aria-label="Secciones principales">
+        <button type="button" class="cc20-tab-btn active" data-tab="studio"  aria-selected="true">Practica</button>
+        <button type="button" class="cc20-tab-btn"        data-tab="compare" aria-selected="false">Comparar</button>
+        <button type="button" class="cc20-tab-btn"        data-tab="learn"   aria-selected="false">Aprender</button>
+      </nav>
+
+      <!-- ====== PRACTICA: panel izquierdo (entradas) ====== -->
+      <section class="card controls" data-cc20-panel="studio">
+        <h2>Entradas</h2>
+        <p id="cc20Error" class="error-banner" hidden></p>
+
+        <div class="field-grid">
+          <label class="span-2">
+            <span>Key <small style="color:var(--muted)">(256 bits = 64 hex)</small></span>
+            <div style="display:flex;gap:6px">
+              <input id="cc20KeyInput" type="text" spellcheck="false"
+                     value="000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+                     maxlength="64" />
+              <button id="cc20RandKeyBtn" type="button" title="Clave aleatoria"
+                      style="flex-shrink:0;padding:0 10px">&#127922;</button>
+            </div>
+          </label>
+
+          <label class="span-2">
+            <span>Nonce <small style="color:var(--muted)">(96 bits = 24 hex, unico por mensaje)</small></span>
+            <div style="display:flex;gap:6px">
+              <input id="cc20NonceInput" type="text" spellcheck="false"
+                     value="000000000000000000000001"
+                     maxlength="24" />
+              <button id="cc20RandNonceBtn" type="button" title="Nonce aleatorio"
+                      style="flex-shrink:0;padding:0 10px">&#127922;</button>
+            </div>
+          </label>
+
+          <label class="span-2">
+            <span>Associated Data <small style="color:var(--muted)">(hex, opcional)</small></span>
+            <input id="cc20AdInput" type="text" spellcheck="false" value="" />
+          </label>
+
+          <label class="span-2">
+            <span>Plaintext <small style="color:var(--muted)">(hex, opcional)</small></span>
+            <input id="cc20PtInput" type="text" spellcheck="false"
+                   value="48656c6c6f2c20576f726c6421" />
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="cc20ExampleBtn" type="button">Cargar RFC 8439</button>
+          <button id="cc20StartBtn" type="button"
+                  style="background:var(--accent-chacha);border-color:var(--accent-chacha);
+                         color:#000;padding:10px 20px;border-radius:8px;border:none;
+                         cursor:pointer;font:inherit;font-weight:600">&#9654; Cifrar</button>
+          <button id="cc20ResetBtn" type="button">Reiniciar</button>
+        </div>
+
+        <!-- Resultado final -->
+        <div id="cc20Result" hidden
+             style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--line)">
+          <p style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                    letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">
+            Resultado final
+          </p>
+          <div style="display:grid;gap:.4rem">
+            <div class="result-field">
+              <span class="result-label">CT</span>
+              <span class="result-val" id="cc20Ciphertext" style="color:var(--accent-2)">(vacio)</span>
+            </div>
+            <div class="result-field">
+              <span class="result-label">Tag</span>
+              <span class="result-val" id="cc20Tag" style="color:var(--accent-chacha)">--</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== PRACTICA: panel derecho (visualizacion) ====== -->
+      <section class="card viz" data-cc20-panel="studio">
+
+        <div class="section-head">
+          <h2>Visualizacion paso a paso</h2>
+          <div class="button-row compact">
+            <button id="cc20PrevBtn"   type="button" disabled>&larr; Prev</button>
+            <button id="cc20NextBtn"   type="button" disabled>Next &rarr;</button>
+            <button id="cc20CopyBtn"   type="button">Copiar CT</button>
+            <button id="cc20ExportBtn" type="button">Exportar JSON</button>
+          </div>
+        </div>
+
+        <!-- Counter + fase -->
+        <div class="status-row">
+          <div class="status-pill" id="cc20StepCounter">Paso -- / --</div>
+          <div class="status-pill" id="cc20PhaseInfo"
+               style="color:var(--accent-chacha)">--</div>
+        </div>
+
+        <!-- Seccion visualizacion (oculta hasta ejecutar) -->
+        <div id="cc20VizSection" hidden>
+
+          <!-- Grid antes / operacion / despues -->
+          <div class="matrix-grid" style="margin-top:.75rem">
+
+            <div class="matrix-panel">
+              <h3 style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                         letter-spacing:.15em;text-transform:uppercase;margin-bottom:.6rem">
+                ESTADO ANTES
+              </h3>
+              <div id="cc20BeforeState" class="chacha-matrix-wrap"></div>
+            </div>
+
+            <div class="matrix-panel arrow-panel">
+              <div class="arrow" style="color:var(--accent-chacha)">&#8595;</div>
+              <div class="phase-tag" id="cc20PhaseTag"
+                   style="color:var(--accent-chacha);background:var(--accent-chacha-glow);
+                          border-color:var(--accent-chacha-border)">--</div>
+              <div class="arrow" style="color:var(--accent-chacha)">&#8595;</div>
+            </div>
+
+            <div class="matrix-panel">
+              <h3 style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                         letter-spacing:.15em;text-transform:uppercase;margin-bottom:.6rem">
+                ESTADO DESPUES
+              </h3>
+              <div id="cc20AfterState" class="chacha-matrix-wrap"></div>
+            </div>
+
+          </div>
+
+          <!-- Extra: CT / Tag output -->
+          <div id="cc20Extra"
+               style="margin-top:.75rem;padding:.6rem .9rem;
+                      background:var(--accent-chacha-glow);border:1px solid var(--accent-chacha-border);
+                      border-radius:8px;font-family:var(--mono);font-size:.78rem;
+                      display:flex;gap:.6rem;align-items:flex-start"
+               hidden></div>
+
+          <!-- Explicacion + bits cambiados -->
+          <div class="subgrid" style="margin-top:.75rem">
+            <article class="mini-card">
+              <h3 style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                         letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">
+                EXPLICACION
+              </h3>
+              <div id="cc20Explanation" class="prose"
+                   style="font-size:.84rem;line-height:1.6"></div>
+            </article>
+            <article class="mini-card">
+              <h3 style="font-family:var(--mono);font-size:.65rem;color:var(--muted);
+                         letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">
+                WORDS CAMBIADAS
+              </h3>
+              <div id="cc20Changes" class="changes"></div>
+            </article>
+          </div>
+
+        </div>
+
+        <!-- Placeholder antes de ejecutar -->
+        <p id="cc20Placeholder"
+           style="color:var(--muted);font-size:.85rem;margin-top:1rem">
+          Ingresa los parametros y presiona
+          <strong style="color:var(--accent-chacha)">&#9654; Cifrar</strong>
+          para ver el paso a paso de las rondas ARX de ChaCha20 y la generacion del tag Poly1305.
+        </p>
+
+      </section>
+
+      <!-- ====== COMPARAR ====== -->
+      <section class="card" data-cc20-panel="compare" hidden
+               style="grid-column:1/-1">
+        <h2>Modo Comparacion &mdash; Efecto Avalancha</h2>
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">
+          Cambia 1 bit de la clave o nonce: el tag cambia completamente (~50% bits distintos).
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:.75rem">
+          <div>
+            <p style="color:var(--accent-chacha);font-size:.75rem;margin-bottom:.6rem;
+                      font-family:var(--mono);letter-spacing:.1em">&#9654; EJECUCION 1</p>
+            <label style="display:grid;gap:5px;margin-bottom:.5rem">
+              <span>Key (64 hex)</span>
+              <input id="cc20CmpKey1" type="text" spellcheck="false" />
+            </label>
+            <label style="display:grid;gap:5px;margin-bottom:.5rem">
+              <span>Nonce (24 hex)</span>
+              <input id="cc20CmpNonce1" type="text" spellcheck="false" />
+            </label>
+            <label style="display:grid;gap:5px">
+              <span>Plaintext (hex)</span>
+              <input id="cc20CmpPt1" type="text" spellcheck="false" />
+            </label>
+          </div>
+          <div>
+            <p style="color:var(--accent-chacha);font-size:.75rem;margin-bottom:.6rem;
+                      font-family:var(--mono);letter-spacing:.1em">&#9654; EJECUCION 2</p>
+            <label style="display:grid;gap:5px;margin-bottom:.5rem">
+              <span>Key (64 hex)</span>
+              <input id="cc20CmpKey2" type="text" spellcheck="false" />
+            </label>
+            <label style="display:grid;gap:5px;margin-bottom:.5rem">
+              <span>Nonce (24 hex)</span>
+              <input id="cc20CmpNonce2" type="text" spellcheck="false" />
+            </label>
+            <label style="display:grid;gap:5px">
+              <span>Plaintext (hex)</span>
+              <input id="cc20CmpPt2" type="text" spellcheck="false" />
+            </label>
+          </div>
+        </div>
+
+        <div class="button-row" style="margin-top:1rem">
+          <button id="cc20CompareBtn" type="button"
+                  style="background:var(--accent-chacha);border-color:var(--accent-chacha);
+                         color:#000;padding:10px 20px;border-radius:8px;border:none;
+                         cursor:pointer;font:inherit;font-weight:600">Comparar</button>
+        </div>
+        <pre id="cc20CmpOutput" class="output" style="margin-top:1rem">--</pre>
+      </section>
+
+      <!-- ====== APRENDER ====== -->
+      <div style="grid-column:1/-1;display:flex;border-bottom:1px solid var(--line);margin-bottom:4px"
+           role="tablist" aria-label="Secciones de aprendizaje"
+           data-cc20-panel="learn" hidden>
+        <button type="button" class="cc20-learn-btn active"
+                data-learn-tab="guide" aria-selected="true">Guia</button>
+      </div>
+
+      <section class="card" data-cc20-panel="learn" data-cc20-learn="guide"
+               hidden style="grid-column:1/-1">
+        <div class="section-head">
+          <h2>Guia educativa ChaCha20-Poly1305</h2>
+        </div>
+        <div id="cc20GuideContent" class="guide-content"></div>
+      </section>
+
+    </main>
+  </div>
+
+</body>
+</html>

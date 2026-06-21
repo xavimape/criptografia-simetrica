@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criptografía Interactiva — AES · ASCON · ChaCha20 · Hashing</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="i18n.js"></script>
+</head>
+<body>
+
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <div class="container">
+
+    <!-- ── Sección AES ── -->
+    <header class="hero">
+      <div class="hero-badge">AES &middot; ASCON &middot; ChaCha20-Poly1305 &middot; Hashing</div>
+      <h1>Criptografía Interactiva</h1>
+      <p>Laboratorio educativo de criptografía simétrica e integridad — visualiza cada algoritmo desde adentro, con contexto operativo SOC y DFIR.</p>
+    </header>
+
+    <main>
+      <p class="accesos-label">Accesos · AES</p>
+      <nav class="card-grid">
+
+        <a href="aes-demo.html" class="card">
+          <span class="card-icon">🖥️</span>
+          <span class="card-label">Demo Lab</span>
+          <span class="card-desc">Visualizá y ejecutá AES paso a paso</span>
+        </a>
+
+        <a href="aes-teoria.html" class="card">
+          <span class="card-icon">📚</span>
+          <span class="card-label">Teoría AES</span>
+          <span class="card-desc">Slides: SubBytes, ShiftRows, MixColumns y más</span>
+        </a>
+
+        <a href="aes-recursos.html" class="card">
+          <span class="card-icon">📎</span>
+          <span class="card-label">Recursos AES</span>
+          <span class="card-desc">FIPS 197, vectores NIST, lecturas y herramientas</span>
+        </a>
+
+        <button class="card" onclick="document.getElementById('modal-aes').classList.add('open')">
+          <span class="card-icon">ℹ️</span>
+          <span class="card-label">Acerca</span>
+          <span class="card-desc">Sobre el proyecto AES Visualizer</span>
+        </button>
+
+      </nav>
+
+      <!-- ── Separador ── -->
+      <hr class="hub-divider">
+
+      <!-- ── Sección ASCON ── -->
+      <p class="accesos-label accesos-label--ascon">Accesos · ASCON-128a</p>
+      <nav class="card-grid">
+
+        <a href="ascon-demo.html" class="card card--ascon">
+          <span class="card-icon">🔐</span>
+          <span class="card-label">Demo Lab ASCON</span>
+          <span class="card-desc">Cifrado autenticado AEAD paso a paso</span>
+        </a>
+
+        <a href="ascon-teoria.html" class="card card--ascon">
+          <span class="card-icon">📖</span>
+          <span class="card-label">Teoría ASCON</span>
+          <span class="card-desc">Estado, permutaciones, S-box y fases AEAD</span>
+        </a>
+
+        <a href="ascon-recursos.html" class="card card--ascon">
+          <span class="card-icon">🗂️</span>
+          <span class="card-label">Recursos ASCON</span>
+          <span class="card-desc">Especificación, NIST, CAESAR y herramientas</span>
+        </a>
+
+        <button class="card card--ascon" onclick="document.getElementById('modal-ascon').classList.add('open')">
+          <span class="card-icon">ℹ️</span>
+          <span class="card-label">Acerca</span>
+          <span class="card-desc">Sobre el proyecto ASCON Visualizer</span>
+        </button>
+
+      </nav>
+
+      <!-- ── Separador ── -->
+      <hr class="hub-divider">
+
+      <!-- ── Sección ChaCha20-Poly1305 ── -->
+      <p class="accesos-label accesos-label--chacha">Accesos · ChaCha20-Poly1305</p>
+      <nav class="card-grid">
+
+        <a href="chacha20-demo.html" class="card card--chacha">
+          <span class="card-icon">🌀</span>
+          <span class="card-label">Demo Lab ChaCha20</span>
+          <span class="card-desc">Cifrado ARX — quarter-rounds y keystream paso a paso</span>
+        </a>
+
+        <a href="chacha20-teoria.html" class="card card--chacha">
+          <span class="card-icon">📖</span>
+          <span class="card-label">Teoría ChaCha20</span>
+          <span class="card-desc">Estado 4×4, QR, rondas col/diag, Poly1305 y AEAD</span>
+        </a>
+
+        <a href="chacha20-recursos.html" class="card card--chacha">
+          <span class="card-icon">🗂️</span>
+          <span class="card-label">Recursos ChaCha20</span>
+          <span class="card-desc">RFC 8439, TLS 1.3, WireGuard, Signal y herramientas</span>
+        </a>
+
+        <button class="card card--chacha" onclick="document.getElementById('modal-chacha').classList.add('open')">
+          <span class="card-icon">ℹ️</span>
+          <span class="card-label">Acerca</span>
+          <span class="card-desc">Sobre el proyecto ChaCha20-Poly1305 Visualizer</span>
+        </button>
+
+      </nav>
+
+      <!-- ── Separador ── -->
+      <hr class="hub-divider">
+
+      <!-- ── Sección Hashing ── -->
+      <p class="accesos-label accesos-label--hash">Accesos · Hashing e Integridad</p>
+      <nav class="card-grid">
+
+        <a href="hash-demo.html" class="card card--hash">
+          <span class="card-icon">🔍</span>
+          <span class="card-label">Demo Lab Hash</span>
+          <span class="card-desc">MD5, SHA-256, SHA-3, HMAC — calcula y visualiza paso a paso</span>
+        </a>
+
+        <a href="hash-teoria.html" class="card card--hash">
+          <span class="card-icon">📖</span>
+          <span class="card-label">Teoria Hashing</span>
+          <span class="card-desc">Merkle-Damgard, Keccak, HMAC y aplicaciones SOC/DFIR</span>
+        </a>
+
+        <a href="hash-recursos.html" class="card card--hash">
+          <span class="card-icon">🗂️</span>
+          <span class="card-label">Recursos Hashing</span>
+          <span class="card-desc">FIPS 180-4, FIPS 202, SHAttered, VirusTotal, herramientas DFIR</span>
+        </a>
+
+        <button class="card card--hash" onclick="document.getElementById('modal-hash').classList.add('open')">
+          <span class="card-icon">ℹ️</span>
+          <span class="card-label">Acerca</span>
+          <span class="card-desc">Sobre el modulo de Hashing e Integridad</span>
+        </button>
+
+      </nav>
+
+      <!-- ── Sección puente — proyecto complementario ── -->
+      <hr class="hub-divider">
+
+      <div style="text-align:center;padding:28px 16px 8px">
+        <p style="font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px">
+          Aplicación operativa
+        </p>
+        <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:10px">
+          ¿Cómo se ve esto en un SOC real?
+        </h2>
+        <p style="color:var(--muted);font-size:.9rem;max-width:560px;margin:0 auto 20px;line-height:1.65">
+          Este proyecto cubre los internos algorítmicos. Para aplicarlos en escenarios operativos —
+          análisis de tráfico TLS, casos de ransomware, labs JA3/Zeek, ejercicios DFIR —
+          el proyecto complementario cubre esa capa con casos y laboratorios orientados a analistas.
+        </p>
+        <a href="https://xavimape.github.io/clase-criptografia/index.html"
+           target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:8px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.3);color:var(--accent);text-decoration:none;padding:10px 22px;border-radius:8px;font-weight:600;font-size:.9rem;transition:background .15s"
+           onmouseover="this.style.background='rgba(0,212,255,.15)'"
+           onmouseout="this.style.background='rgba(0,212,255,.08)'">
+          🔗 Cryptography for SOC Analysts →
+        </a>
+        <p style="font-size:.75rem;color:var(--muted);margin-top:12px">
+          Casos SOC · Labs JA3/Zeek · Ejercicios DFIR · Threat Intelligence
+        </p>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- ── Modal Acerca AES ── -->
+  <div class="modal-overlay" id="modal-aes"
+       onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box">
+      <button class="modal-close" onclick="document.getElementById('modal-aes').classList.remove('open')" aria-label="Cerrar">×</button>
+      <div class="hero-badge">Acerca del proyecto</div>
+      <h2>AES Visualizer</h2>
+      <div class="prose">
+        <p>
+          Laboratorio educativo para comprender el funcionamiento interno del
+          Advanced Encryption Standard. El objetivo es hacer visible lo que AES
+          hace a cada byte en cada ronda: cómo la S-box transforma cada valor,
+          cómo ShiftRows redistribuye posiciones, qué hace MixColumns sobre GF(2⁸)
+          y cómo AddRoundKey incorpora el material de clave.
+        </p>
+        <p>
+          El modo <strong>Comparación</strong> permite observar el <em>efecto avalancha</em>:
+          un cambio de un solo bit en la clave o el plaintext produce diferencias que se
+          propagan hasta afectar prácticamente todos los bits del ciphertext al finalizar
+          las rondas.
+        </p>
+        <p>
+          Funciona completamente en el navegador — sin backend, sin dependencias externas.
+          Implementación pura en JavaScript, matemáticamente equivalente
+          a la versión Python/Tkinter de escritorio.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Acerca ASCON ── -->
+  <div class="modal-overlay" id="modal-ascon"
+       onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="border-color: var(--accent-ascon-border);">
+      <button class="modal-close" onclick="document.getElementById('modal-ascon').classList.remove('open')" aria-label="Cerrar">×</button>
+      <div class="hero-badge hero-badge--ascon">Acerca del proyecto</div>
+      <h2>ASCON-128a Visualizer</h2>
+      <div class="prose">
+        <p>
+          Laboratorio educativo para comprender el cifrado autenticado ASCON-128a
+          (AEAD — Authenticated Encryption with Associated Data). Ganador de la
+          competencia CAESAR 2019 y finalista del proceso NIST Lightweight Cryptography.
+        </p>
+        <p>
+          ASCON opera sobre un estado interno de 320 bits dividido en cinco registros
+          de 64 bits (x0–x4). Las permutaciones <strong>pa</strong> (12 rondas) y
+          <strong>pb</strong> (6 rondas) aplican constante de ronda, S-box de 5 bits
+          y capa de difusión lineal para lograr confusión y difusión.
+        </p>
+        <p>
+          El visualizador permite observar cada fase: Inicialización, Absorción de
+          Datos Asociados, Cifrado y Finalización, con el estado interno visible
+          en cada paso. Sin backend, sin dependencias externas.
+        </p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── Modal Acerca ChaCha20 ── -->
+  <div class="modal-overlay" id="modal-chacha"
+       onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="border-color: var(--accent-chacha-border);">
+      <button class="modal-close" onclick="document.getElementById('modal-chacha').classList.remove('open')" aria-label="Cerrar">×</button>
+      <div class="hero-badge hero-badge--chacha">Acerca del proyecto</div>
+      <h2>ChaCha20-Poly1305 Visualizer</h2>
+      <div class="prose">
+        <p>
+          Laboratorio educativo para comprender el cifrado AEAD ChaCha20-Poly1305,
+          estándar IETF (RFC 8439) utilizado en TLS 1.3, WireGuard y Signal.
+        </p>
+        <p>
+          ChaCha20 opera sobre un estado de 16 palabras de 32 bits usando únicamente
+          sumas, rotaciones y XOR (ARX). Poly1305 proporciona autenticación mediante
+          evaluación polinomial en GF(2¹³⁰ − 5).
+        </p>
+        <p>
+          El visualizador muestra cada double-round (columnas + diagonales) sobre la
+          matriz 4×4, permitiendo observar cómo un cambio de 1 bit en la clave se
+          propaga a todo el estado en pocas rondas.
+        </p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── Modal Acerca Hash ── -->
+  <div class="modal-overlay" id="modal-hash"
+       onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="border-color: var(--accent-hash-border);">
+      <button class="modal-close" onclick="document.getElementById('modal-hash').classList.remove('open')" aria-label="Cerrar">×</button>
+      <div class="hero-badge" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:var(--accent-hash)">Acerca del proyecto</div>
+      <h2>Hashing e Integridad</h2>
+      <div class="prose">
+        <p>
+          Laboratorio educativo para comprender el funcionamiento interno de las
+          funciones hash criptograficas: MD5, SHA-256, SHA3-256 y HMAC-SHA256.
+        </p>
+        <p>
+          El modulo incluye visualizacion paso a paso del proceso de hashing,
+          demostracion del <strong>efecto avalancha</strong> (como 1 bit de diferencia
+          en la entrada cambia ~50% del digest), y una guia sobre el rol del hashing
+          en contextos operativos: IOCs en threat intel, cadena de custodia DFIR,
+          deteccion por hash en SIEM/EDR y HMAC en autenticacion de APIs.
+        </p>
+        <p>
+          Las implementaciones son pedagogicas y no deben usarse en produccion.
+          Para produccion usar <code>hashlib</code>, OpenSSL o la Web Crypto API.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
