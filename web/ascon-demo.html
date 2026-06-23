@@ -65,6 +65,7 @@
         <button type="button" class="ascon-tab-btn active" data-tab="studio"  aria-selected="true">Práctica</button>
         <button type="button" class="ascon-tab-btn"        data-tab="compare" aria-selected="false">Comparar</button>
         <button type="button" class="ascon-tab-btn"        data-tab="learn"   aria-selected="false">Aprender</button>
+        <button type="button" class="ascon-tab-btn"        data-tab="kat"     aria-selected="false">Vectores KAT</button>
       </nav>
 
       <!-- ====== PRÁCTICA: panel izquierdo (entradas) ====== -->
@@ -73,17 +74,15 @@
         <p id="asconError" class="error-banner" hidden></p>
 
         <!-- Selector de variante -->
-        <div style="display:flex;gap:6px;margin-bottom:1rem;align-items:center">
-          <span style="font-size:.8rem;color:var(--muted);font-family:var(--mono);letter-spacing:.06em">Variante</span>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+        <div class="variant-selector">
+          <span class="variant-label">Variante</span>
+          <label class="variant-pill">
             <input type="radio" name="asconVariant" value="128a" id="asconVariant128a" checked />
-            <span style="font-size:.85rem;font-weight:600">ASCON-128a</span>
-            <small style="color:var(--muted);font-size:.7rem">(rate=128b, pb=8)</small>
+            ASCON-128a <small>(rate=128b · pb=8)</small>
           </label>
-          <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+          <label class="variant-pill">
             <input type="radio" name="asconVariant" value="128" id="asconVariant128" />
-            <span style="font-size:.85rem;font-weight:600">ASCON-128</span>
-            <small style="color:var(--muted);font-size:.7rem">(rate=64b, pb=6)</small>
+            ASCON-128 <small>(rate=64b · pb=6)</small>
           </label>
         </div>
 
@@ -123,10 +122,7 @@
 
         <div class="button-row">
           <button id="asconExampleBtn" type="button">Cargar ejemplo</button>
-          <button id="asconStartBtn" type="button"
-                  style="background:var(--accent-ascon);border-color:var(--accent-ascon);
-                         color:#fff;padding:10px 20px;border-radius:8px;border:none;
-                         cursor:pointer;font:inherit;font-weight:600">▶ Cifrar</button>
+          <button id="asconStartBtn" type="button" class="btn-ascon-primary">▶ Cifrar</button>
           <button id="asconResetBtn" type="button">Reiniciar</button>
         </div>
 
@@ -155,12 +151,25 @@
 
         <div class="section-head">
           <h2>Visualización paso a paso</h2>
-          <div class="button-row compact">
-            <button id="asconPrevBtn"   type="button" disabled>← Prev</button>
-            <button id="asconNextBtn"   type="button" disabled>Next →</button>
-            <button id="asconCopyBtn"   type="button">Copiar CT</button>
-            <button id="asconExportBtn" type="button">Exportar JSON</button>
+          <div class="playback-controls">
+            <button id="asconPrevBtn"   class="playback-btn" type="button" disabled>← Prev</button>
+            <button id="asconPlayBtn"   class="playback-btn" type="button" disabled>▶ Play</button>
+            <button id="asconNextBtn"   class="playback-btn" type="button" disabled>Next →</button>
+            <select id="asconSpeedSel" class="speed-select" title="Velocidad de reproducción">
+              <option value="800">Lento</option>
+              <option value="400" selected>Normal</option>
+              <option value="150">Rápido</option>
+            </select>
+            <button id="asconCopyBtn"   class="playback-btn" type="button">Copiar CT</button>
+            <button id="asconExportBtn" class="playback-btn" type="button">Exportar JSON</button>
           </div>
+        </div>
+        <!-- Barra de progreso -->
+        <div class="ascon-progress-wrap" id="asconProgressWrap" hidden>
+          <div class="ascon-progress-bar">
+            <div class="ascon-progress-fill" id="asconProgressFill"></div>
+          </div>
+          <span class="ascon-progress-label" id="asconProgressLabel">Paso 0 / 0</span>
         </div>
 
         <!-- Counter + fase -->
@@ -285,21 +294,28 @@
         </div>
 
         <div class="button-row" style="margin-top:1rem">
-          <button id="asconCompareBtn" type="button"
-                  style="background:var(--accent-ascon);border-color:var(--accent-ascon);
-                         color:#fff;padding:10px 20px;border-radius:8px;border:none;
-                         cursor:pointer;font:inherit;font-weight:600">Comparar</button>
+          <button id="asconCompareBtn" type="button" class="btn-ascon-primary">Comparar</button>
         </div>
-        <pre id="asconCmpOutput" class="output" style="margin-top:1rem">—</pre>
+        <div id="asconCmpOutput" style="margin-top:1rem">—</div>
+        <div class="avalanche-graph-wrap" id="asconAvalancheWrap" hidden>
+          <div class="avalanche-pct" id="asconAvalanchePct">—%</div>
+          <div class="avalanche-label">bits modificados en el ciphertext final</div>
+          <canvas id="asconAvalancheCanvas" width="600" height="120"></canvas>
+        </div>
       </section>
 
       <!-- ====== APRENDER ====== -->
-      <div style="grid-column:1/-1;display:flex;border-bottom:1px solid var(--line);
-                  margin-bottom:4px"
+      <div style="grid-column:1/-1;display:flex;border-bottom:1px solid var(--line);margin-bottom:4px"
            role="tablist" aria-label="Secciones de aprendizaje"
            data-ascon-panel="learn" hidden>
-        <button type="button" class="ascon-learn-btn active"
+        <button type="button" class="ascon-learn-btn active" role="tab"
                 data-learn-tab="guide" aria-selected="true">Guía</button>
+        <button type="button" class="ascon-learn-btn" role="tab"
+                data-learn-tab="concepts" aria-selected="false">Conceptos</button>
+        <button type="button" class="ascon-learn-btn" role="tab"
+                data-learn-tab="ops" aria-selected="false">Operaciones</button>
+        <button type="button" class="ascon-learn-btn" role="tab"
+                data-learn-tab="examples" aria-selected="false">Ejemplos KAT</button>
       </div>
 
       <section class="card" data-ascon-panel="learn" data-ascon-learn="guide"
@@ -308,6 +324,35 @@
           <h2>Guía educativa ASCON-128a</h2>
         </div>
         <div id="asconGuideContent" class="guide-content"></div>
+      </section>
+
+      <!-- ====== VECTORES KAT ====== -->
+      <section class="card" data-ascon-panel="kat" hidden style="grid-column:1/-1">
+        <h2>Verificación — Vectores Oficiales KAT</h2>
+        <p class="prose" style="margin-bottom:1rem">
+          Vectores Known-Answer Test del repositorio oficial
+          <a href="https://github.com/ascon/ascon-c/tree/v1.2.8" target="_blank" rel="noopener">ascon/ascon-c@v1.2.8</a>.
+          Seleccioná un vector y verificá que el motor local produce exactamente el mismo resultado.
+        </p>
+        <div class="kat-panel">
+          <div class="kat-selector-row">
+            <label style="display:grid;gap:6px;flex:1;min-width:200px">
+              <span>Variante</span>
+              <select id="katVariantSel" class="speed-select" style="width:100%" title="Variante ASCON">
+                <option value="128a">ASCON-128a</option>
+                <option value="128">ASCON-128</option>
+              </select>
+            </label>
+            <label style="display:grid;gap:6px;flex:2;min-width:200px">
+              <span>Vector</span>
+              <select id="katVectorSel" class="speed-select" style="width:100%" title="Vector KAT"></select>
+            </label>
+            <button id="katRunBtn" class="btn-ascon-primary" type="button" style="align-self:end">
+              Verificar
+            </button>
+          </div>
+          <div id="katResult" class="kat-result"></div>
+        </div>
       </section>
 
     </main>

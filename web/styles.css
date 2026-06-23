@@ -1234,3 +1234,189 @@ h3 {
 [data-theme="solarized-sand"] .bg-grid,[data-theme="nordic-frost"] .bg-grid{background-image:linear-gradient(rgba(74,63,48,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(74,63,48,.05) 1px,transparent 1px);}
 [data-theme] input,[data-theme] select{background:var(--field-bg);color:var(--code-ink);border-color:var(--line);}
 .theme-select{min-width:190px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--field-bg,rgba(4,12,20,.78));color:var(--code-ink,var(--text));font:inherit;cursor:pointer;outline:none;}
+
+/* ── Variant pill selector ── */
+.variant-selector {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.variant-label {
+  font-size: .8rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  letter-spacing: .06em;
+  margin-right: 4px;
+}
+.variant-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-size: .82rem;
+  background: rgba(255,255,255,.03);
+  color: var(--text);
+  transition: border-color .2s, background .2s, color .2s;
+}
+.variant-pill input[type="radio"] { display: none; }
+.variant-pill:has(input:checked) {
+  border-color: var(--accent-ascon-border);
+  background: var(--accent-ascon-glow);
+  color: var(--accent-ascon);
+  font-weight: 600;
+}
+.variant-pill small { color: var(--muted); font-size: .7rem; }
+.variant-pill:has(input:checked) small { color: var(--accent-ascon); opacity: .7; }
+
+/* ── Botón primario ASCON ── */
+.btn-ascon-primary {
+  background: var(--accent-ascon);
+  border: none;
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition: opacity .15s, transform .15s;
+}
+.btn-ascon-primary:hover { opacity: .88; transform: translateY(-1px); }
+
+/* ── Barra de progreso ── */
+.ascon-progress-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(168,85,247,.06);
+  border: 1px solid var(--accent-ascon-border);
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+.ascon-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ascon-progress-fill {
+  height: 100%;
+  background: var(--accent-ascon);
+  border-radius: 3px;
+  transition: width .25s ease;
+  width: 0%;
+}
+.ascon-progress-label {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--accent-ascon);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+
+/* ── Controles de reproducción ── */
+.playback-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.playback-btn {
+  border: 1px solid var(--accent-ascon-border);
+  background: var(--accent-ascon-glow);
+  color: var(--accent-ascon);
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font: inherit;
+  font-size: .82rem;
+  transition: background .15s, color .15s;
+}
+.playback-btn:hover:not(:disabled) {
+  background: var(--accent-ascon);
+  color: #fff;
+}
+.playback-btn:disabled { opacity: .35; cursor: default; }
+.speed-select {
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--field-bg, rgba(4,12,20,.78));
+  color: var(--muted);
+  font: inherit;
+  font-size: .78rem;
+  cursor: pointer;
+}
+
+/* ── Panel KAT Vectores ── */
+.kat-panel { display: grid; gap: 14px; }
+.kat-selector-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.kat-result {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-family: var(--mono);
+  font-size: .83rem;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.02);
+  display: none;
+}
+.kat-result.match {
+  display: block;
+  border-color: var(--ok);
+  background: rgba(130,209,115,.08);
+  color: var(--ok);
+}
+.kat-result.mismatch {
+  display: block;
+  border-color: var(--danger);
+  background: rgba(241,122,122,.08);
+  color: var(--danger);
+}
+.kat-detail {
+  margin-top: 8px;
+  color: var(--text);
+  font-size: .78rem;
+  line-height: 1.7;
+  opacity: .85;
+}
+
+/* ── Gráfico avalancha ── */
+.avalanche-graph-wrap {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--accent-ascon-border);
+  border-radius: 10px;
+  background: var(--accent-ascon-glow);
+}
+.avalanche-graph-wrap canvas {
+  width: 100%;
+  height: 120px;
+  display: block;
+}
+.avalanche-pct {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent-ascon);
+  text-align: center;
+  margin-bottom: 4px;
+}
+.avalanche-label {
+  font-size: .75rem;
+  color: var(--muted);
+  text-align: center;
+}

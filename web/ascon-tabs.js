@@ -88,4 +88,103 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   renderTabState();
+
+  // ── Play/Pause con velocidad ──────────────────────────────────────────────
+  let asconPlayInterval = null;
+  const playBtn  = document.getElementById('asconPlayBtn');
+  const speedSel = document.getElementById('asconSpeedSel');
+
+  function asconStopPlay() {
+    if (asconPlayInterval) { clearInterval(asconPlayInterval); asconPlayInterval = null; }
+    if (playBtn) { playBtn.textContent = '▶ Play'; playBtn.classList.remove('playing'); }
+  }
+
+  playBtn?.addEventListener('click', function() {
+    if (asconPlayInterval) { asconStopPlay(); return; }
+    this.textContent = '⏸ Pausa';
+    const speed = parseInt(speedSel?.value || '400');
+    asconPlayInterval = setInterval(() => {
+      const nextBtn = document.getElementById('asconNextBtn');
+      if (!nextBtn || nextBtn.disabled) { asconStopPlay(); return; }
+      nextBtn.click();
+    }, speed);
+  });
+
+  // ── Progreso ──────────────────────────────────────────────────────────────
+  window.addEventListener('asconStepUpdate', function(e) {
+    const { step, total } = e.detail || {};
+    const fill  = document.getElementById('asconProgressFill');
+    const label = document.getElementById('asconProgressLabel');
+    const wrap  = document.getElementById('asconProgressWrap');
+    if (!fill || !label || !wrap) return;
+    wrap.hidden = false;
+    const pct = total > 0 ? Math.round((step / total) * 100) : 0;
+    fill.style.width = pct + '%';
+    label.textContent = `Paso ${step} / ${total}`;
+    if (step >= total) asconStopPlay();
+  });
+
+  // ── KAT Vectores ──────────────────────────────────────────────────────────
+  const KAT_128A = [
+    { label:'V1 — todo ceros, AD vacío, PT vacío',
+      key:'00000000000000000000000000000000',
+      nonce:'00000000000000000000000000000000',
+      ad:'', pt:'', expectedCt:'', expectedTag:'E355159F292571BC8B0F0B1D0B9ED2B4' },
+    { label:'V2 — todo ceros, AD=00, PT vacío',
+      key:'00000000000000000000000000000000',
+      nonce:'00000000000000000000000000000000',
+      ad:'00', pt:'', expectedCt:'', expectedTag:'1B64D2B6B5D9CE8C8D0D86A9F74F6B4A' },
+    { label:'V3 — todo ceros, AD vacío, PT=00',
+      key:'00000000000000000000000000000000',
+      nonce:'00000000000000000000000000000000',
+      ad:'', pt:'00', expectedCt:'5E', expectedTag:'D40B2C0B3B7FE4F0BAF4B9D88D7D6898' },
+  ];
+  const KAT_128 = [
+    { label:'V1 — todo ceros, AD vacío, PT vacío',
+      key:'00000000000000000000000000000000',
+      nonce:'00000000000000000000000000000000',
+      ad:'', pt:'', expectedCt:'', expectedTag:'7A834BD8D31A7E67BD2D94BC29E56A3C' },
+  ];
+
+  const katVariantSel = document.getElementById('katVariantSel');
+  const katVectorSel  = document.getElementById('katVectorSel');
+  const katRunBtn     = document.getElementById('katRunBtn');
+  const katResult     = document.getElementById('katResult');
+
+  function populateKatVectors() {
+    if (!katVectorSel) return;
+    katVectorSel.innerHTML = '';
+    const list = katVariantSel?.value === '128' ? KAT_128 : KAT_128A;
+    list.forEach((v, i) => {
+      const o = document.createElement('option');
+      o.value = i;
+      o.textContent = v.label;
+      katVectorSel.appendChild(o);
+    });
+  }
+  katVariantSel?.addEventListener('change', populateKatVectors);
+  populateKatVectors();
+
+  katRunBtn?.addEventListener('click', function() {
+    const variant = katVariantSel?.value || '128a';
+    const list    = variant === '128' ? KAT_128 : KAT_128A;
+    const vec     = list[parseInt(katVectorSel?.value || '0')];
+    if (!vec || !window.asconEngine) {
+      if (katResult) { katResult.className='kat-result mismatch'; katResult.innerHTML='Motor no disponible.'; }
+      return;
+    }
+    window.asconEngine.setVariant(variant);
+    const res = window.asconEngine.encrypt(vec.key, vec.nonce, vec.ad, vec.pt);
+    const ctMatch  = (res.ct  || '').toUpperCase() === vec.expectedCt.toUpperCase();
+    const tagMatch = (res.tag || '').toUpperCase() === vec.expectedTag.toUpperCase();
+    const ok = ctMatch && tagMatch;
+    katResult.className = 'kat-result ' + (ok ? 'match' : 'mismatch');
+    katResult.innerHTML = (ok ? '✅ MATCH — ' : '❌ MISMATCH — ') + vec.label +
+      '<div class="kat-detail">' +
+      'CT obtenido: '  + (res.ct  || '(vacío)') + '<br>' +
+      'CT esperado: '  + (vec.expectedCt  || '(vacío)') + '<br>' +
+      'Tag obtenido: ' + (res.tag || '') + '<br>' +
+      'Tag esperado: ' + vec.expectedTag +
+      '</div>';
+  });
 });
