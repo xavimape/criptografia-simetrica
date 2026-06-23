@@ -17,13 +17,22 @@
     <header class="hero">
       <div>
         <a href="index.html" class="section-back">← Inicio</a>
-        <div class="hero-badge hero-badge--ascon">ASCON-128a · AEAD</div>
+        <div class="hero-badge hero-badge--ascon" id="asconHeroBadge">ASCON-128a · AEAD</div>
         <p class="eyebrow" style="color:var(--accent-ascon)">Cifrado Autenticado Ligero</p>
         <h1>Demo Lab ASCON</h1>
-        <p class="hero-copy">
+        <p class="hero-copy" id="asconHeroCopy">
           Ejecutá ASCON-128a paso a paso: observá cómo el estado interno de 320 bits (x0–x4)
           evoluciona en cada ronda de inicialización, absorción AD, cifrado y finalización.
         </p>
+      </div>
+      <div class="hero-tools">
+        <label class="lang-switch">
+          <span id="langLabel">Idioma</span>
+          <select id="langSelect">
+            <option value="es">Español</option>
+            <option value="en">English</option>
+          </select>
+        </label>
       </div>
     </header>
 
@@ -57,6 +66,21 @@
       <section class="card controls" data-ascon-panel="studio">
         <h2>Entradas</h2>
         <p id="asconError" class="error-banner" hidden></p>
+
+        <!-- Selector de variante -->
+        <div style="display:flex;gap:6px;margin-bottom:1rem;align-items:center">
+          <span style="font-size:.8rem;color:var(--muted);font-family:var(--mono);letter-spacing:.06em">Variante</span>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+            <input type="radio" name="asconVariant" value="128a" id="asconVariant128a" checked />
+            <span style="font-size:.85rem;font-weight:600">ASCON-128a</span>
+            <small style="color:var(--muted);font-size:.7rem">(rate=128b, pb=8)</small>
+          </label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+            <input type="radio" name="asconVariant" value="128" id="asconVariant128" />
+            <span style="font-size:.85rem;font-weight:600">ASCON-128</span>
+            <small style="color:var(--muted);font-size:.7rem">(rate=64b, pb=6)</small>
+          </label>
+        </div>
 
         <div class="field-grid">
           <label class="span-2">
@@ -293,6 +317,27 @@
           if (ph) ph.hidden = true;
         });
       }
+
+      // Update hero badge and placeholder text when variant changes
+      function updateVariantUI() {
+        var v = (document.querySelector('input[name="asconVariant"]:checked') || {}).value || '128a';
+        var badge = document.getElementById('asconHeroBadge');
+        var copy  = document.getElementById('asconHeroCopy');
+        var ph    = document.getElementById('asconPlaceholder');
+        if (badge) badge.textContent = v === '128' ? 'ASCON-128 · AEAD' : 'ASCON-128a · AEAD';
+        if (copy) copy.textContent = v === '128'
+          ? 'Ejecutá ASCON-128 paso a paso: rate=64 bits, pb=6 rondas. Observá cómo el estado de 320 bits evoluciona en cada fase.'
+          : 'Ejecutá ASCON-128a paso a paso: observá cómo el estado interno de 320 bits (x0–x4) evoluciona en cada ronda de inicialización, absorción AD, cifrado y finalización.';
+        if (ph) {
+          var strong = ph.querySelector('strong');
+          if (strong) strong.textContent = v === '128' ? '▶ Cifrar' : '▶ Cifrar';
+        }
+      }
+
+      document.querySelectorAll('input[name="asconVariant"]').forEach(function(r) {
+        r.addEventListener('change', updateVariantUI);
+      });
+      updateVariantUI();
     });
   </script>
 
