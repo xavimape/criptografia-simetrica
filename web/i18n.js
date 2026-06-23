@@ -80,6 +80,8 @@
       existing.addEventListener('change', function (e) { applyLang(e.target.value); });
       return;
     }
+    /* Si la página ya tiene pills de idioma (hero-controls), no inyectar el select */
+    if (document.querySelector('[data-lang-pill]')) return;
     /* Inject into .hero > div or .hero */
     var target = q('.hero > div') || q('.hero');
     if (!target) return;
@@ -686,6 +688,10 @@
   /* ══════════════════════════════════════════════════════════════════════════
    * INIT
    * ══════════════════════════════════════════════════════════════════════════ */
+  /* Exponer applyLang globalmente para que las pills de idioma puedan llamarla
+     sin depender de un #langSelect inyectado */
+  window.setLang = applyLang;
+
   document.addEventListener('DOMContentLoaded', function () {
     initSelect();
 

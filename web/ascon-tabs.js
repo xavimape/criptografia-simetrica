@@ -103,6 +103,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ── Pills algoritmo ───────────────────────────────────────────────────────
+  function updateVariantHero(v) {
+    const badge = document.getElementById('asconHeroBadge');
+    const copy  = document.getElementById('asconHeroCopy');
+    if (badge) badge.textContent = v === '128' ? 'ASCON-128 · AEAD' : 'ASCON-128a · AEAD';
+    if (copy) copy.textContent = v === '128'
+      ? 'Ejecutá ASCON-128 paso a paso: rate=64 bits, pb=6 rondas. Observá cómo el estado de 320 bits evoluciona en cada fase.'
+      : 'Ejecutá ASCON-128a paso a paso: observá cómo el estado interno de 320 bits (x0–x4) evoluciona en cada ronda de inicialización, absorción AD, cifrado y finalización.';
+  }
+
   document.querySelectorAll('[data-variant-pill]').forEach(btn => {
     btn.addEventListener('click', function() {
       const v = this.dataset.variantPill;
@@ -111,6 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const r = document.getElementById('asconVariant' + v);
       if (r) { r.checked = true; r.dispatchEvent(new Event('change')); }
       if (window.asconEngine) window.asconEngine.setVariant(v);
+      updateVariantHero(v);
     });
   });
 
@@ -210,4 +220,76 @@ document.addEventListener("DOMContentLoaded", () => {
       'Tag esperado: ' + vec.expectedTag +
       '</div>';
   });
+
+  // ── Ejemplos KAT en sección Aprender ─────────────────────────────────────
+  window.loadKatInPractica = function(variant, vec) {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('asconKeyInput',   vec.key);
+    set('asconNonceInput', vec.nonce);
+    set('asconAdInput',    vec.ad);
+    set('asconPtInput',    vec.pt);
+    // Sincronizar pill de variante
+    document.querySelectorAll('[data-variant-pill]').forEach(b =>
+      b.setAttribute('aria-selected', String(b.dataset.variantPill === variant)));
+    const r = document.getElementById('asconVariant' + variant);
+    if (r) { r.checked = true; r.dispatchEvent(new Event('change')); }
+    if (window.asconEngine) window.asconEngine.setVariant(variant);
+    // Cambiar a tab Práctica
+    currentMainTab = 'studio';
+    guideOverlayOn = false;
+    renderTabState();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  function renderKatExamples() {
+    const el = document.getElementById('asconExamplesContent');
+    if (!el) return;
+
+    const KEY_NONCE = '000102030405060708090A0B0C0D0E0F';
+    const buildTable = (variant, list) => {
+      const label = variant === '128a' ? 'ASCON-128a' : 'ASCON-128';
+      const rows = list.map((v, i) =>
+        `<tr>
+          <td style="padding:6px 10px;font-family:var(--mono);font-size:0.78rem">${v.label}</td>
+          <td style="padding:6px 10px;font-family:var(--mono);font-size:0.76rem;color:var(--muted)">${v.ad || '—'}</td>
+          <td style="padding:6px 10px;font-family:var(--mono);font-size:0.76rem;color:var(--muted)">${v.pt || '—'}</td>
+          <td style="padding:6px 10px;font-family:var(--mono);font-size:0.76rem;color:var(--accent-ascon)">${v.expectedCt || '—'}</td>
+          <td style="padding:6px 10px;font-family:var(--mono);font-size:0.72rem;word-break:break-all">${v.expectedTag}</td>
+          <td style="padding:6px 10px">
+            <button class="btn-ascon-primary" style="font-size:0.75rem;padding:4px 10px;white-space:nowrap"
+              onclick="window.loadKatInPractica('${variant}', ${JSON.stringify(v).replace(/"/g, '&quot;')})">
+              ▶ Práctica
+            </button>
+          </td>
+        </tr>`
+      ).join('');
+      return `
+        <h3 style="margin:1.2rem 0 0.5rem;color:var(--accent-ascon)">${label}</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.5rem">
+          Clave y Nonce: <code style="font-family:var(--mono)">${KEY_NONCE}</code>
+        </p>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+            <thead><tr style="border-bottom:1px solid var(--line)">
+              <th style="text-align:left;padding:6px 10px">Descripción</th>
+              <th style="text-align:left;padding:6px 10px">AD (hex)</th>
+              <th style="text-align:left;padding:6px 10px">PT (hex)</th>
+              <th style="text-align:left;padding:6px 10px">CT esperado</th>
+              <th style="text-align:left;padding:6px 10px">Tag esperado</th>
+              <th style="padding:6px 10px"></th>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    };
+
+    el.innerHTML =
+      '<p class="prose" style="margin-bottom:0.8rem">Vectores Known-Answer Test del repositorio oficial ' +
+      '<a href="https://github.com/ascon/ascon-c/tree/v1.2.8" target="_blank" rel="noopener">ascon/ascon-c@v1.2.8</a>. ' +
+      'Hacé clic en <strong>▶ Práctica</strong> para cargar el vector en el cifrador y verificarlo paso a paso.</p>' +
+      buildTable('128a', KAT_128A) +
+      buildTable('128', KAT_128);
+  }
+
+  renderKatExamples();
 });

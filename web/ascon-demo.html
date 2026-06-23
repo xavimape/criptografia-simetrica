@@ -88,8 +88,8 @@
         <h2>Entradas</h2>
         <p id="asconError" class="error-banner" hidden></p>
 
-        <!-- Selector de variante -->
-        <div class="variant-selector">
+        <!-- Selector de variante: oculto visualmente — controlado por las pills del header -->
+        <div class="variant-selector" style="display:none">
           <span class="variant-label">Variante</span>
           <label class="variant-pill">
             <input type="radio" name="asconVariant" value="128a" id="asconVariant128a" checked />
@@ -341,6 +341,30 @@
         <div id="asconGuideContent" class="guide-content"></div>
       </section>
 
+      <section class="card" data-ascon-panel="learn" data-ascon-learn="concepts"
+               hidden style="grid-column:1/-1">
+        <div class="section-head">
+          <h2 id="asconConceptsTitle">Conceptos clave</h2>
+        </div>
+        <div id="asconConceptsContent" class="guide-content"></div>
+      </section>
+
+      <section class="card" data-ascon-panel="learn" data-ascon-learn="ops"
+               hidden style="grid-column:1/-1">
+        <div class="section-head">
+          <h2 id="asconOpsTitle">Operaciones internas</h2>
+        </div>
+        <div id="asconOpsContent" class="guide-content"></div>
+      </section>
+
+      <section class="card" data-ascon-panel="learn" data-ascon-learn="examples"
+               hidden style="grid-column:1/-1">
+        <div class="section-head">
+          <h2 id="asconExamplesTitle">Ejemplos — Vectores KAT</h2>
+        </div>
+        <div id="asconExamplesContent"></div>
+      </section>
+
       <!-- ====== VECTORES KAT ====== -->
       <section class="card" data-ascon-panel="kat" hidden style="grid-column:1/-1">
         <h2>Verificación — Vectores Oficiales KAT</h2>
@@ -373,38 +397,6 @@
     </main>
   </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var startBtn = document.getElementById('asconStartBtn');
-      if (startBtn) {
-        startBtn.addEventListener('click', function() {
-          var ph = document.getElementById('asconPlaceholder');
-          if (ph) ph.hidden = true;
-        });
-      }
-
-      // Update hero badge and placeholder text when variant changes
-      function updateVariantUI() {
-        var v = (document.querySelector('input[name="asconVariant"]:checked') || {}).value || '128a';
-        var badge = document.getElementById('asconHeroBadge');
-        var copy  = document.getElementById('asconHeroCopy');
-        var ph    = document.getElementById('asconPlaceholder');
-        if (badge) badge.textContent = v === '128' ? 'ASCON-128 · AEAD' : 'ASCON-128a · AEAD';
-        if (copy) copy.textContent = v === '128'
-          ? 'Ejecutá ASCON-128 paso a paso: rate=64 bits, pb=6 rondas. Observá cómo el estado de 320 bits evoluciona en cada fase.'
-          : 'Ejecutá ASCON-128a paso a paso: observá cómo el estado interno de 320 bits (x0–x4) evoluciona en cada ronda de inicialización, absorción AD, cifrado y finalización.';
-        if (ph) {
-          var strong = ph.querySelector('strong');
-          if (strong) strong.textContent = v === '128' ? '▶ Cifrar' : '▶ Cifrar';
-        }
-      }
-
-      document.querySelectorAll('input[name="asconVariant"]').forEach(function(r) {
-        r.addEventListener('change', updateVariantUI);
-      });
-      updateVariantUI();
-    });
-  </script>
 
 </body>
 </html>

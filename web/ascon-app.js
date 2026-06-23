@@ -15,11 +15,6 @@ function pickLang(v) {
   if (v && typeof v === 'object') return v[L] || v.es || '';
   return v || '';
 }
-function asconTc(el, enText) {
-  if (!el) return;
-  if (el._i18nOrig === undefined) el._i18nOrig = el.textContent;
-  el.textContent = (getLang() === 'en') ? enText : el._i18nOrig;
-}
 
 
 // ==================== CONSTANTES ====================
@@ -625,13 +620,21 @@ function renderCurrentStep() {
   }
 
   updateNavButtons();
+
+  // Bug 3 fix: despachar evento para que ascon-tabs.js actualice la barra de progreso
+  window.dispatchEvent(new CustomEvent('asconStepUpdate', {
+    detail: { step: currentStep + 1, total: executionSteps.length }
+  }));
 }
 
 function updateNavButtons() {
   const prev = document.getElementById('asconPrevBtn');
   const next = document.getElementById('asconNextBtn');
+  const play = document.getElementById('asconPlayBtn');
   if (prev) prev.disabled = currentStep === 0;
   if (next) next.disabled = currentStep >= executionSteps.length - 1;
+  // Bug 2 fix: habilitar Play cuando hay pasos cargados
+  if (play) play.disabled = executionSteps.length === 0;
 }
 
 // ==================== ESTADO DE LA APP ====================
@@ -711,8 +714,8 @@ function compareRuns() {
   }
   const variant = document.querySelector('input[name="asconVariant"]:checked')?.value || '128a';
   try {
-    const r1 = eng.run(variant, k1, n1, '', p1);
-    const r2 = eng.run(variant, k2, n2, '', p2);
+    const r1 = eng.run(variant, k1, n1, '', pt1);
+    const r2 = eng.run(variant, k2, n2, '', pt2);
     const ct1 = r1.ct, tag1 = r1.tag, ct2 = r2.ct, tag2 = r2.tag;
 
     const tagDiff = [...tag1].filter((c,i) => c !== tag2[i]).length;
@@ -854,6 +857,140 @@ function renderGuide() {
   ).join('');
 }
 
+// ==================== CONCEPTOS CLAVE ====================
+
+var ASCON_CONCEPTS = [
+  {
+    title: { es: 'AEAD — ¿Qué garantiza exactamente?', en: 'AEAD — What does it actually guarantee?' },
+    content: {
+      es: 'AEAD (Authenticated Encryption with Associated Data) garantiza tres propiedades <strong>en un solo pase</strong>:<br><br><strong>Confidencialidad:</strong> el plaintext queda cifrado y no puede leerse sin la clave.<br><strong>Integridad:</strong> cualquier modificación del ciphertext produce un tag diferente y el receptor lo detecta.<br><strong>Autenticidad:</strong> solo el poseedor de la clave pudo producir el tag correcto.<br><br>A diferencia de cifrar y luego firmar (Encrypt-then-MAC), ASCON hace las tres cosas con el mismo estado interno sin costo adicional.',
+      en: 'AEAD (Authenticated Encryption with Associated Data) guarantees three properties <strong>in a single pass</strong>:<br><br><strong>Confidentiality:</strong> the plaintext is encrypted and cannot be read without the key.<br><strong>Integrity:</strong> any modification to the ciphertext produces a different tag, detected by the receiver.<br><strong>Authenticity:</strong> only the holder of the key could produce the correct tag.<br><br>Unlike Encrypt-then-MAC, ASCON achieves all three using the same internal state at no extra cost.'
+    }
+  },
+  {
+    title: { es: 'Construcción Sponge vs cifrado de bloque', en: 'Sponge construction vs block cipher' },
+    content: {
+      es: 'AES usa una <strong>red de sustitución-permutación</strong> sobre bloques fijos de 128 bits, dependiendo de un modo de operación externo (CBC, GCM, etc.).<br><br>ASCON usa una <strong>construcción Sponge/Dúplex</strong>: un estado interno de 320 bits que <em>absorbe</em> la entrada y luego <em>exprime</em> la salida.<br><br>Ventajas del sponge en IoT: un solo primitivo cubre cifrado, autenticación y hash; el estado compacto cabe en MCUs con 256 bytes de RAM; sin necesidad de S-boxes grandes ni tablas de lookup.',
+      en: 'AES uses a <strong>substitution-permutation network</strong> over fixed 128-bit blocks, relying on an external mode of operation (CBC, GCM, etc.).<br><br>ASCON uses a <strong>Sponge/Duplex construction</strong>: a 320-bit internal state that <em>absorbs</em> input and then <em>squeezes</em> output.<br><br>Sponge advantages for IoT: a single primitive covers encryption, authentication and hashing; the compact state fits in MCUs with 256 bytes of RAM; no large S-boxes or lookup tables needed.'
+    }
+  },
+  {
+    title: { es: 'Rate vs Capacity', en: 'Rate vs Capacity' },
+    content: {
+      es: 'El estado de 320 bits se divide en dos zonas:<br><br><strong>Rate</strong> (x0‖x1 = 128 bits en ASCON-128a): la parte que interactúa con la entrada/salida. Se XOR-ea con el AD y el PT, y de ahí se extrae el CT.<br><br><strong>Capacity</strong> (x2‖x3‖x4 = 192 bits): la parte que <em>nunca se expone directamente</em>. Actúa como "memoria secreta" que hace imposible revertir la permutación sin conocer la clave.<br><br>Cuanto mayor la capacity, mayor la seguridad. ASCON-128a ofrece 128 bits de seguridad.',
+      en: 'The 320-bit state is split into two zones:<br><br><strong>Rate</strong> (x0‖x1 = 128 bits in ASCON-128a): the part that interacts with input/output. It is XORed with AD and PT, and CT is extracted from it.<br><br><strong>Capacity</strong> (x2‖x3‖x4 = 192 bits): the part that is <em>never directly exposed</em>. Acts as "secret memory" that makes it impossible to reverse the permutation without knowing the key.<br><br>The larger the capacity, the higher the security. ASCON-128a provides 128-bit security.'
+    }
+  },
+  {
+    title: { es: 'ASCON-128 vs ASCON-128a', en: 'ASCON-128 vs ASCON-128a' },
+    content: {
+      es: '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:4px 8px">Parámetro</th><th style="padding:4px 8px">ASCON-128</th><th style="padding:4px 8px">ASCON-128a</th></tr><tr><td style="padding:4px 8px">Rate</td><td style="padding:4px 8px;text-align:center">64 bits (8 B)</td><td style="padding:4px 8px;text-align:center">128 bits (16 B)</td></tr><tr><td style="padding:4px 8px">pᵦ (rondas cifrado)</td><td style="padding:4px 8px;text-align:center">6</td><td style="padding:4px 8px;text-align:center">8</td></tr><tr><td style="padding:4px 8px">Throughput</td><td style="padding:4px 8px;text-align:center">Menor</td><td style="padding:4px 8px;text-align:center">Mayor ✓</td></tr><tr><td style="padding:4px 8px">Margen seguridad</td><td style="padding:4px 8px;text-align:center">Mayor ✓</td><td style="padding:4px 8px;text-align:center">Menor</td></tr><tr><td style="padding:4px 8px">IV</td><td style="padding:4px 8px;text-align:center" colspan="1">80400c06…</td><td style="padding:4px 8px;text-align:center">80800c08…</td></tr></table><br>Ambos ofrecen seguridad de 128 bits contra ataques genéricos. ASCON-128a es preferido cuando el throughput importa.',
+      en: '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:4px 8px">Parameter</th><th style="padding:4px 8px">ASCON-128</th><th style="padding:4px 8px">ASCON-128a</th></tr><tr><td style="padding:4px 8px">Rate</td><td style="padding:4px 8px;text-align:center">64 bits (8 B)</td><td style="padding:4px 8px;text-align:center">128 bits (16 B)</td></tr><tr><td style="padding:4px 8px">pᵦ (cipher rounds)</td><td style="padding:4px 8px;text-align:center">6</td><td style="padding:4px 8px;text-align:center">8</td></tr><tr><td style="padding:4px 8px">Throughput</td><td style="padding:4px 8px;text-align:center">Lower</td><td style="padding:4px 8px;text-align:center">Higher ✓</td></tr><tr><td style="padding:4px 8px">Security margin</td><td style="padding:4px 8px;text-align:center">Higher ✓</td><td style="padding:4px 8px;text-align:center">Lower</td></tr><tr><td style="padding:4px 8px">IV</td><td style="padding:4px 8px;text-align:center">80400c06…</td><td style="padding:4px 8px;text-align:center">80800c08…</td></tr></table><br>Both offer 128-bit security against generic attacks. ASCON-128a is preferred when throughput matters.'
+    }
+  },
+  {
+    title: { es: 'Las 4 fases del algoritmo', en: 'The 4 algorithm phases' },
+    content: {
+      es: '<strong>1. Inicialización:</strong> Estado inicial = IV ‖ Key ‖ Nonce. Se aplica pₐ (12 rondas). Luego Key se XOR-ea en los registros finales.<br><br><strong>2. Absorción de AD:</strong> Cada bloque de Datos Asociados se XOR-ea en el rate y se aplica pᵦ. Al final: x4 ^= 1 (separación de dominio).<br><br><strong>3. Cifrado:</strong> Cada bloque de PT se XOR-ea con el rate → produce bloque de CT. Se aplica pᵦ entre bloques.<br><br><strong>4. Finalización:</strong> Key se XOR-ea de nuevo → pₐ (12 rondas) → Tag = (x3 XOR Key_high) ‖ (x4 XOR Key_low).',
+      en: '<strong>1. Initialization:</strong> Initial state = IV ‖ Key ‖ Nonce. pₐ (12 rounds) is applied. Then Key is XORed into the final registers.<br><br><strong>2. AD Absorption:</strong> Each Associated Data block is XORed into the rate and pᵦ is applied. At the end: x4 ^= 1 (domain separation).<br><br><strong>3. Encryption:</strong> Each PT block is XORed with the rate → produces a CT block. pᵦ is applied between blocks.<br><br><strong>4. Finalization:</strong> Key is XORed again → pₐ (12 rounds) → Tag = (x3 XOR Key_high) ‖ (x4 XOR Key_low).'
+    }
+  },
+  {
+    title: { es: 'Padding — cómo se manejan bloques incompletos', en: 'Padding — handling incomplete blocks' },
+    content: {
+      es: 'Si el último bloque de AD o PT no llena el rate completo, ASCON aplica <strong>padding: 1 ‖ 0*</strong>: se añade un bit "1" en la primera posición libre seguido de ceros.<br><br>Ejemplo (rate 128 bits = 16 bytes, PT = 3 bytes = <code>000102</code>):<br>Bloque padded = <code>00 01 02 80 00 00 00 00 00 00 00 00 00 00 00 00</code><br><br>Esto garantiza que PT vacío y PT "00" sean distinguibles, evitando colisiones entre mensajes de diferente longitud.',
+      en: 'If the last AD or PT block does not fill the full rate, ASCON applies <strong>padding: 1 ‖ 0*</strong>: a "1" bit is added at the first free position followed by zeros.<br><br>Example (rate 128 bits = 16 bytes, PT = 3 bytes = <code>000102</code>):<br>Padded block = <code>00 01 02 80 00 00 00 00 00 00 00 00 00 00 00 00</code><br><br>This ensures empty PT and PT "00" are distinguishable, avoiding collisions between messages of different lengths.'
+    }
+  },
+  {
+    title: { es: 'Nonce misuse — ataque práctico', en: 'Nonce misuse — practical attack' },
+    content: {
+      es: 'Si se cifran dos mensajes distintos con la <strong>misma clave y mismo nonce</strong>:<br><br><code>CT1 = PT1 XOR keystream</code><br><code>CT2 = PT2 XOR keystream</code><br><code>CT1 XOR CT2 = PT1 XOR PT2</code><br><br>El atacante obtiene el XOR de los dos plaintexts. Con crib-dragging (conociendo palabras comunes como "HTTP", "GET") puede recuperar ambos textos completos. Solución: <strong>nonce único por mensaje</strong> — contador de 128 bits, UUID, o timestamp de alta resolución.',
+      en: 'If two different messages are encrypted with the <strong>same key and same nonce</strong>:<br><br><code>CT1 = PT1 XOR keystream</code><br><code>CT2 = PT2 XOR keystream</code><br><code>CT1 XOR CT2 = PT1 XOR PT2</code><br><br>The attacker obtains the XOR of both plaintexts. With crib-dragging (knowing common words like "HTTP", "GET") they can recover both full texts. Solution: <strong>unique nonce per message</strong> — 128-bit counter, UUID, or high-resolution timestamp.'
+    }
+  },
+  {
+    title: { es: 'ASCON en la práctica (SOC/DFIR)', en: 'ASCON in practice (SOC/DFIR)' },
+    content: {
+      es: '¿Dónde encontrar ASCON en la naturaleza?<br><br><strong>Protocolos IoT:</strong> Matter (smart home), Thread, OSCORE (CoAP sobre 6LoWPAN), TinyCrypt.<br><strong>Firmwares embedded:</strong> Cortex-M, AVR, RISC-V con librerías ASCON-C.<br><strong>Chips:</strong> STM32, ESP32-C3, nRF52.<br><br><strong>Firma en binarios (DFIR):</strong> la IV <code>0x80800c0800000000</code> (128a) o <code>0x80400c0600000000</code> (128) aparece en el estado inicial. Buscar con <code>grep -c "\\x80\\x80\\x0c\\x08"</code> o en hex dump para identificar el algoritmo.',
+      en: 'Where to find ASCON in the wild?<br><br><strong>IoT protocols:</strong> Matter (smart home), Thread, OSCORE (CoAP over 6LoWPAN), TinyCrypt.<br><strong>Embedded firmware:</strong> Cortex-M, AVR, RISC-V with ASCON-C libraries.<br><strong>Chips:</strong> STM32, ESP32-C3, nRF52.<br><br><strong>Binary signature (DFIR):</strong> the IV <code>0x80800c0800000000</code> (128a) or <code>0x80400c0600000000</code> (128) appears in the initial state. Search with <code>grep -c "\\x80\\x80\\x0c\\x08"</code> or in hex dump to identify the algorithm.'
+    }
+  }
+];
+
+function renderConcepts() {
+  var el = document.getElementById('asconConceptsContent');
+  if (!el) return;
+  var t = document.getElementById('asconConceptsTitle');
+  if (t) t.textContent = getLang() === 'en' ? 'Key Concepts' : 'Conceptos clave';
+  el.innerHTML = ASCON_CONCEPTS.map(function(s, i) {
+    return '<div class="guide-card">' +
+      '<h3>' + (i + 1) + '. ' + pickLang(s.title) + '</h3>' +
+      '<div class="prose">' + pickLang(s.content) + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// ==================== OPERACIONES INTERNAS ====================
+
+var ASCON_OPS = [
+  {
+    title: { es: 'Una ronda completa', en: 'A complete round' },
+    content: {
+      es: 'Cada ronda de ASCON tiene exactamente 3 pasos en este orden:<br><br><strong>1. Constante de ronda (RC):</strong> x2 ^= RC_i<br><strong>2. S-box de 5 bits (capa de sustitución):</strong> opera en columnas verticales, introduce no-linealidad.<br><strong>3. Capa lineal (difusión):</strong> cada registro xi se XOR-ea con dos rotaciones de sí mismo.<br><br>En pₐ esto se repite 12 veces (RC = 0xf0 → 0x4b). En pᵦ se repiten las últimas 8 (128a) o 6 (128) rondas.',
+      en: 'Each ASCON round has exactly 3 steps in this order:<br><br><strong>1. Round constant (RC):</strong> x2 ^= RC_i<br><strong>2. 5-bit S-box (substitution layer):</strong> operates on vertical columns, introduces nonlinearity.<br><strong>3. Linear layer (diffusion):</strong> each register xi is XORed with two rotations of itself.<br><br>In pₐ this repeats 12 times (RC = 0xf0 → 0x4b). In pᵦ the last 8 (128a) or 6 (128) rounds are used.'
+    }
+  },
+  {
+    title: { es: 'S-box de 5 bits — pseudocódigo', en: '5-bit S-box — pseudocode' },
+    content: {
+      es: 'Opera sobre 64 columnas de 5 bits en paralelo (1 bit de cada registro x0–x4):<br><br><code>x0 ^= x4; x4 ^= x3; x2 ^= x1;<br>t0=x0; t1=x1; t2=x2; t3=x3; t4=x4;<br>x0 = t0 ^ (~t1 &amp; t2);<br>x1 = t1 ^ (~t2 &amp; t3);<br>x2 = t2 ^ (~t3 &amp; t4);<br>x3 = t3 ^ (~t4 &amp; t0);<br>x4 = t4 ^ (~t0 &amp; t1);<br>x1 ^= x0; x3 ^= x2; x0 ^= x4; x2 = ~x2;</code><br><br>Solo AND, NOT y XOR — sin tablas de lookup, resistente a timing attacks en software.',
+      en: 'Operates on 64 5-bit columns in parallel (1 bit from each register x0–x4):<br><br><code>x0 ^= x4; x4 ^= x3; x2 ^= x1;<br>t0=x0; t1=x1; t2=x2; t3=x3; t4=x4;<br>x0 = t0 ^ (~t1 &amp; t2);<br>x1 = t1 ^ (~t2 &amp; t3);<br>x2 = t2 ^ (~t3 &amp; t4);<br>x3 = t3 ^ (~t4 &amp; t0);<br>x4 = t4 ^ (~t0 &amp; t1);<br>x1 ^= x0; x3 ^= x2; x0 ^= x4; x2 = ~x2;</code><br><br>Only AND, NOT and XOR — no lookup tables, resistant to timing attacks in software.'
+    }
+  },
+  {
+    title: { es: 'Capa lineal — rotaciones por registro', en: 'Linear layer — rotations per register' },
+    content: {
+      es: '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:4px 8px">Reg.</th><th style="padding:4px 8px">Fórmula</th><th style="padding:4px 8px">Rotaciones</th></tr><tr><td style="padding:4px 8px">x0</td><td style="padding:4px 8px">x0 ^= ROR(x0,19) ^ ROR(x0,28)</td><td style="padding:4px 8px;text-align:center">19, 28</td></tr><tr><td style="padding:4px 8px">x1</td><td style="padding:4px 8px">x1 ^= ROR(x1,61) ^ ROR(x1,39)</td><td style="padding:4px 8px;text-align:center">61, 39</td></tr><tr><td style="padding:4px 8px">x2</td><td style="padding:4px 8px">x2 ^= ROR(x2,1) ^ ROR(x2,6)</td><td style="padding:4px 8px;text-align:center">1, 6</td></tr><tr><td style="padding:4px 8px">x3</td><td style="padding:4px 8px">x3 ^= ROR(x3,10) ^ ROR(x3,17)</td><td style="padding:4px 8px;text-align:center">10, 17</td></tr><tr><td style="padding:4px 8px">x4</td><td style="padding:4px 8px">x4 ^= ROR(x4,7) ^ ROR(x4,41)</td><td style="padding:4px 8px;text-align:center">7, 41</td></tr></table><br>Las constantes se eligieron para maximizar la difusión de bits en el menor número de rondas.',
+      en: '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:4px 8px">Reg.</th><th style="padding:4px 8px">Formula</th><th style="padding:4px 8px">Rotations</th></tr><tr><td style="padding:4px 8px">x0</td><td style="padding:4px 8px">x0 ^= ROR(x0,19) ^ ROR(x0,28)</td><td style="padding:4px 8px;text-align:center">19, 28</td></tr><tr><td style="padding:4px 8px">x1</td><td style="padding:4px 8px">x1 ^= ROR(x1,61) ^ ROR(x1,39)</td><td style="padding:4px 8px;text-align:center">61, 39</td></tr><tr><td style="padding:4px 8px">x2</td><td style="padding:4px 8px">x2 ^= ROR(x2,1) ^ ROR(x2,6)</td><td style="padding:4px 8px;text-align:center">1, 6</td></tr><tr><td style="padding:4px 8px">x3</td><td style="padding:4px 8px">x3 ^= ROR(x3,10) ^ ROR(x3,17)</td><td style="padding:4px 8px;text-align:center">10, 17</td></tr><tr><td style="padding:4px 8px">x4</td><td style="padding:4px 8px">x4 ^= ROR(x4,7) ^ ROR(x4,41)</td><td style="padding:4px 8px;text-align:center">7, 41</td></tr></table><br>The constants were chosen to maximize bit diffusion in the fewest number of rounds.'
+    }
+  },
+  {
+    title: { es: 'Constantes de ronda RC', en: 'Round constants RC' },
+    content: {
+      es: 'Las 12 constantes hacen que cada ronda sea única (evitan slide attacks y simetría):<br><br><table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="padding:4px 8px">Ronda (pₐ)</th><th style="padding:4px 8px">RC (hex)</th><th style="padding:4px 8px">Ronda (pₐ)</th><th style="padding:4px 8px">RC (hex)</th></tr><tr><td style="padding:4px 8px;text-align:center">0</td><td style="padding:4px 8px;text-align:center">0xf0</td><td style="padding:4px 8px;text-align:center">6</td><td style="padding:4px 8px;text-align:center">0x96</td></tr><tr><td style="padding:4px 8px;text-align:center">1</td><td style="padding:4px 8px;text-align:center">0xe1</td><td style="padding:4px 8px;text-align:center">7</td><td style="padding:4px 8px;text-align:center">0x87</td></tr><tr><td style="padding:4px 8px;text-align:center">2</td><td style="padding:4px 8px;text-align:center">0xd2</td><td style="padding:4px 8px;text-align:center">8</td><td style="padding:4px 8px;text-align:center">0x78</td></tr><tr><td style="padding:4px 8px;text-align:center">3</td><td style="padding:4px 8px;text-align:center">0xc3</td><td style="padding:4px 8px;text-align:center">9</td><td style="padding:4px 8px;text-align:center">0x69</td></tr><tr><td style="padding:4px 8px;text-align:center">4</td><td style="padding:4px 8px;text-align:center">0xb4</td><td style="padding:4px 8px;text-align:center">10</td><td style="padding:4px 8px;text-align:center">0x5a</td></tr><tr><td style="padding:4px 8px;text-align:center">5</td><td style="padding:4px 8px;text-align:center">0xa5</td><td style="padding:4px 8px;text-align:center">11</td><td style="padding:4px 8px;text-align:center">0x4b</td></tr></table><br>pᵦ=8 (128a) usa rondas 4–11; pᵦ=6 (128) usa rondas 6–11.',
+      en: 'The 12 constants make each round unique (preventing slide attacks and symmetry):<br><br><table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="padding:4px 8px">Round (pₐ)</th><th style="padding:4px 8px">RC (hex)</th><th style="padding:4px 8px">Round (pₐ)</th><th style="padding:4px 8px">RC (hex)</th></tr><tr><td style="padding:4px 8px;text-align:center">0</td><td style="padding:4px 8px;text-align:center">0xf0</td><td style="padding:4px 8px;text-align:center">6</td><td style="padding:4px 8px;text-align:center">0x96</td></tr><tr><td style="padding:4px 8px;text-align:center">1</td><td style="padding:4px 8px;text-align:center">0xe1</td><td style="padding:4px 8px;text-align:center">7</td><td style="padding:4px 8px;text-align:center">0x87</td></tr><tr><td style="padding:4px 8px;text-align:center">2</td><td style="padding:4px 8px;text-align:center">0xd2</td><td style="padding:4px 8px;text-align:center">8</td><td style="padding:4px 8px;text-align:center">0x78</td></tr><tr><td style="padding:4px 8px;text-align:center">3</td><td style="padding:4px 8px;text-align:center">0xc3</td><td style="padding:4px 8px;text-align:center">9</td><td style="padding:4px 8px;text-align:center">0x69</td></tr><tr><td style="padding:4px 8px;text-align:center">4</td><td style="padding:4px 8px;text-align:center">0xb4</td><td style="padding:4px 8px;text-align:center">10</td><td style="padding:4px 8px;text-align:center">0x5a</td></tr><tr><td style="padding:4px 8px;text-align:center">5</td><td style="padding:4px 8px;text-align:center">0xa5</td><td style="padding:4px 8px;text-align:center">11</td><td style="padding:4px 8px;text-align:center">0x4b</td></tr></table><br>pᵦ=8 (128a) uses rounds 4–11; pᵦ=6 (128) uses rounds 6–11.'
+    }
+  },
+  {
+    title: { es: 'Separación de dominio (x4 ^= 1)', en: 'Domain separation (x4 ^= 1)' },
+    content: {
+      es: 'Después de absorber el <strong>último bloque de AD</strong> (y antes de empezar el cifrado), ASCON hace:<br><br><code>x4 ^= 1</code><br><br>¿Por qué? Sin esta operación, el estado después de AD vacío (sin datos asociados) sería idéntico al estado inicial del cifrado. Esto permitiría confundir "AD vacío + PT = X" con "AD = X + PT vacío", atacando la integridad.<br><br>Esta separación también se aplica si el AD es vacío: el flip ocurre igualmente, asegurando que la presencia/ausencia de AD siempre afecte el estado.',
+      en: 'After absorbing the <strong>last AD block</strong> (and before starting encryption), ASCON does:<br><br><code>x4 ^= 1</code><br><br>Why? Without this, the state after empty AD (no associated data) would be identical to the initial encryption state. This would allow confusing "empty AD + PT = X" with "AD = X + empty PT", attacking integrity.<br><br>This separation also applies when AD is empty: the flip occurs anyway, ensuring the presence/absence of AD always affects the state.'
+    }
+  },
+  {
+    title: { es: 'Finalización y generación del tag', en: 'Finalization and tag generation' },
+    content: {
+      es: 'La fase de finalización tiene 3 pasos:<br><br><strong>1. Key XOR:</strong> Se XOR-ea la clave en los registros intermedios del estado (x1‖x2 en ASCON-128a, x1‖x2 en ASCON-128).<br><br><strong>2. Permutación pₐ:</strong> Se aplican las 12 rondas completas. Esta operación mezcla la clave con todo el estado de forma irreversible sin la clave.<br><br><strong>3. Tag:</strong><br><code>Tag_high = x3 XOR Key_high</code><br><code>Tag_low  = x4 XOR Key_low</code><br><code>Tag = Tag_high ‖ Tag_low = 128 bits</code><br><br>El último XOR de la clave asegura que el tag depende directamente de ella.',
+      en: 'The finalization phase has 3 steps:<br><br><strong>1. Key XOR:</strong> The key is XORed into the middle state registers (x1‖x2 in ASCON-128a, x1‖x2 in ASCON-128).<br><br><strong>2. Permutation pₐ:</strong> All 12 rounds are applied. This irreversibly mixes the key with the entire state without the key.<br><br><strong>3. Tag:</strong><br><code>Tag_high = x3 XOR Key_high</code><br><code>Tag_low  = x4 XOR Key_low</code><br><code>Tag = Tag_high ‖ Tag_low = 128 bits</code><br><br>The final key XOR ensures the tag directly depends on it.'
+    }
+  }
+];
+
+function renderOps() {
+  var el = document.getElementById('asconOpsContent');
+  if (!el) return;
+  var t = document.getElementById('asconOpsTitle');
+  if (t) t.textContent = getLang() === 'en' ? 'Internal Operations' : 'Operaciones internas';
+  el.innerHTML = ASCON_OPS.map(function(s, i) {
+    return '<div class="guide-card">' +
+      '<h3>' + (i + 1) + '. ' + pickLang(s.title) + '</h3>' +
+      '<div class="prose">' + pickLang(s.content) + '</div>' +
+      '</div>';
+  }).join('');
+}
+
 // ==================== INICIALIZACION ====================
 
 
@@ -927,6 +1064,8 @@ function applyLanguage() {
 
   /* Re-render guide and current step */
   renderGuide();
+  renderConcepts();
+  renderOps();
   if (executionSteps.length) renderCurrentStep();
 }
 
@@ -940,6 +1079,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var v = document.getElementById('asconVizSection'); if (v) v.hidden = true;
     var ph = document.getElementById('asconPlaceholder'); if (ph) ph.hidden = false;
     var pw = document.getElementById('asconProgressWrap'); if (pw) pw.hidden = true;
+    // Bug 5 fix: resetear counter y deshabilitar botones de navegación
+    var sc = document.getElementById('asconStepCounter');
+    if (sc) sc.textContent = 'Paso — / —';
+    var pi = document.getElementById('asconPhaseInfo');
+    if (pi) pi.textContent = '—';
+    updateNavButtons();
     showError('');
   });
 
@@ -981,6 +1126,8 @@ document.addEventListener('DOMContentLoaded', function() {
   s2('asconCmpNonce2', '000102030405060708090A0B0C0D0E01');
 
   renderGuide();
+  renderConcepts();
+  renderOps();
 
   // Bilingual: apply on load + listen for changes
   applyLanguage();
