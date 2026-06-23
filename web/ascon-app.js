@@ -257,6 +257,128 @@ class ASCON128a {
   }
 }
 
+// ==================== MOTOR BUNDLE (spec-fiel · KAT v1.2) ====================
+
+/* Motor extraído del bundle de referencia. Verificado contra KAT oficiales ascon-c@v1.2.8. */
+const eng = (function () {
+  const RC = [0xf0n,0xe1n,0xd2n,0xc3n,0xb4n,0xa5n,0x96n,0x87n,0x78n,0x69n,0x5an,0x4bn];
+  const MASK = (1n << 64n) - 1n;
+  const FF = 0xFFFFFFFFFFFFFFFFn;
+  const rotr = (x, n) => ((x >> BigInt(n)) | (x << BigInt(64 - n))) & MASK;
+  const toHex64b = v => v.toString(16).toUpperCase().padStart(16, '0');
+  const diffBitsB = (a, b) => { const x = a ^ b; let n = 0; for (let i = 0; i < 64; i++) if ((x >> BigInt(i)) & 1n) n++; return n; };
+  const hexBytes = h => { const a = []; h = (h || '').replace(/\s+/g, ''); for (let i = 0; i + 1 < h.length; i += 2) a.push(parseInt(h.substr(i, 2), 16)); return a; };
+  const wf = (a, o) => { let v = 0n; for (let i = 0; i < 8; i++) v = (v << 8n) | BigInt(a[o + i] || 0); return v & MASK; };
+  const bo = v => { const a = []; for (let i = 7; i >= 0; i--) a.push(Number((v >> BigInt(i * 8)) & 0xffn)); return a; };
+  const bh = a => a.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+  function roundStep(S, r) {
+    S[2] ^= RC[r];
+    S[0] ^= S[4]; S[4] ^= S[3]; S[2] ^= S[1];
+    const T = []; for (let i = 0; i < 5; i++) T.push(((S[i] ^ FF) & S[(i + 1) % 5]) & MASK);
+    for (let i = 0; i < 5; i++) S[i] = (S[i] ^ T[(i + 1) % 5]) & MASK;
+    S[1] ^= S[0]; S[0] ^= S[4]; S[3] ^= S[2]; S[2] ^= FF;
+    S[0] = (S[0] ^ rotr(S[0], 19) ^ rotr(S[0], 28)) & MASK;
+    S[1] = (S[1] ^ rotr(S[1], 61) ^ rotr(S[1], 39)) & MASK;
+    S[2] = (S[2] ^ rotr(S[2],  1) ^ rotr(S[2],  6)) & MASK;
+    S[3] = (S[3] ^ rotr(S[3], 10) ^ rotr(S[3], 17)) & MASK;
+    S[4] = (S[4] ^ rotr(S[4],  7) ^ rotr(S[4], 41)) & MASK;
+  }
+  function permSteps(S, rounds, steps, color, esPh, enPh) {
+    const start = 12 - rounds;
+    for (let r = start; r < 12; r++) {
+      const before = [...S]; roundStep(S, r); const k = r - start + 1;
+      steps.push({ phase: { es: esPh + ' · Ronda ' + k + '/' + rounds, en: enPh + ' · Round ' + k + '/' + rounds },
+        phaseColor: color, operation: 'RC ⊕ x2 → S-box → difusión',
+        description: { es: '<strong>Constante de ronda RC = 0x' + RC[r].toString(16).toUpperCase() + '</strong> (XOR en x2).<br><strong>S-box</strong> de 5 bits en las 64 columnas (no-linealidad) y <strong>capa lineal</strong> con rotaciones a derecha (difusión intra-registro).',
+          en: '<strong>Round constant RC = 0x' + RC[r].toString(16).toUpperCase() + '</strong> (XOR on x2).<br>5-bit <strong>S-box</strong> across 64 columns (nonlinearity) and <strong>linear layer</strong> with right rotations (intra-register diffusion).' },
+        before, after: [...S] });
+    }
+  }
+  function run(variant, keyH, nonceH, adH, ptH) {
+    const a128 = variant === '128a';
+    const rate = a128 ? 16 : 8, b = a128 ? 8 : 6, IV = a128 ? 0x80800c0800000000n : 0x80400c0600000000n;
+    const rW = a128 ? 'x0‖x1' : 'x0';
+    const Ci = 'var(--accent)', Ca = '#34d399', Ce = 'var(--accent-2)', Cf = 'var(--accent-ascon)';
+    const steps = [];
+    const key = hexBytes(keyH), nonce = hexBytes(nonceH);
+    const K0 = wf(key, 0), K1 = wf(key, 8);
+    let S = [IV, K0, K1, wf(nonce, 0), wf(nonce, 8)];
+    steps.push({ phase: { es: 'Inicialización', en: 'Initialization' }, phaseColor: Ci, operation: 'IV ‖ Key ‖ Nonce',
+      description: { es: 'El estado de 320 bits se arma con <strong>x0 = IV</strong> (0x' + IV.toString(16).toUpperCase() + ', identifica ASCON-' + variant + ': rate ' + (rate * 8) + ' bits, pa=12, pb=' + b + '), <strong>x1‖x2 = Key</strong> y <strong>x3‖x4 = Nonce</strong>.',
+        en: 'The 320-bit state is built as <strong>x0 = IV</strong> (0x' + IV.toString(16).toUpperCase() + ', identifies ASCON-' + variant + ': rate ' + (rate * 8) + ' bits, pa=12, pb=' + b + '), <strong>x1‖x2 = Key</strong> and <strong>x3‖x4 = Nonce</strong>.' },
+      before: [0n,0n,0n,0n,0n], after: [...S] });
+    permSteps(S, 12, steps, Ci, 'Inicialización · pa', 'Initialization · pa');
+    let bk = [...S]; S[3] ^= K0; S[4] ^= K1;
+    steps.push({ phase: { es: 'Inicialización', en: 'Initialization' }, phaseColor: Ci, operation: 'x3 ⊕ K_high ; x4 ⊕ K_low',
+      description: { es: 'La clave se XOR en <strong>x3</strong> y <strong>x4</strong> (capacidad), fijando el estado inicial a Key y Nonce.', en: 'The key is XOR-ed into <strong>x3</strong> and <strong>x4</strong> (capacity), binding the initial state to Key and Nonce.' },
+      before: bk, after: [...S] });
+    const ad = hexBytes(adH);
+    if (ad.length > 0) {
+      const padA = ad.concat([0x80]); while (padA.length % rate) padA.push(0);
+      const nb = padA.length / rate;
+      for (let i = 0; i < nb; i++) {
+        const o = i * rate; const b0 = [...S];
+        S[0] ^= wf(padA, o); if (a128) S[1] ^= wf(padA, o + 8);
+        steps.push({ phase: { es: 'AD · Bloque ' + (i + 1), en: 'AD · Block ' + (i + 1) }, phaseColor: Ca, operation: rW + ' ⊕= AD',
+          description: { es: 'El bloque AD se XOR sobre el <strong>rate</strong> (' + rW + ', ' + (rate * 8) + ' bits); luego pb (' + b + ' rondas). El AD queda autenticado por el tag.',
+            en: 'AD block XOR-ed onto the <strong>rate</strong> (' + rW + ', ' + (rate * 8) + ' bits); then pb (' + b + ' rounds). The AD is authenticated by the tag.' },
+          before: b0, after: [...S] });
+        permSteps(S, b, steps, Ca, 'AD · pb', 'AD · pb');
+      }
+    }
+    let bd = [...S]; S[4] ^= 1n;
+    steps.push({ phase: { es: 'Separación de dominio', en: 'Domain separation' }, phaseColor: Ca, operation: 'x4 ⊕= 1',
+      description: { es: 'El bit 0 de x4 se invierte: distingue el procesamiento de AD del de cifrado.', en: 'Bit 0 of x4 is flipped: separates AD processing from encryption.' },
+      before: bd, after: [...S] });
+    const pt = hexBytes(ptH); const plast = pt.length % rate;
+    const padP = pt.concat([0x80]); while (padP.length % rate) padP.push(0);
+    const nb2 = padP.length / rate; let ct = [];
+    for (let i = 0; i < nb2; i++) {
+      const o = i * rate, isLast = i === nb2 - 1; const b0 = [...S];
+      S[0] ^= wf(padP, o); let cb = bo(S[0]); if (a128) { S[1] ^= wf(padP, o + 8); cb = cb.concat(bo(S[1])); }
+      const out = isLast ? cb.slice(0, plast) : cb; ct = ct.concat(out);
+      steps.push({ phase: { es: 'Cifrado · Bloque ' + (i + 1), en: 'Encrypt · Block ' + (i + 1) }, phaseColor: Ce, operation: 'CT = ' + rW + ' ⊕ PT',
+        description: { es: 'CT = rate ⊕ PT; estado actualizado con CT. CT de este bloque: <code>' + (bh(out) || '∅') + '</code>.', en: 'CT = rate ⊕ PT; state updated with CT. This block CT: <code>' + (bh(out) || '∅') + '</code>.' },
+        before: b0, after: [...S], extra: { label: { es: 'CT bloque', en: 'block CT' }, value: bh(out) || '∅', color: 'var(--accent-2)' } });
+      if (!isLast) permSteps(S, b, steps, Ce, 'Cifrado · pb', 'Encrypt · pb');
+    }
+    const r8 = rate / 8; let bf = [...S]; S[r8] ^= K0; S[r8 + 1] ^= K1;
+    steps.push({ phase: { es: 'Finalización', en: 'Finalization' }, phaseColor: Cf, operation: 'x' + r8 + ' ⊕ K_high ; x' + (r8 + 1) + ' ⊕ K_low',
+      description: { es: 'La clave se XOR en x' + r8 + ', x' + (r8 + 1) + ' antes de la última pa de 12 rondas.', en: 'Key XOR-ed into x' + r8 + ', x' + (r8 + 1) + ' before the final 12-round pa.' },
+      before: bf, after: [...S] });
+    permSteps(S, 12, steps, Cf, 'Finalización · pa', 'Finalization · pa');
+    const tag = toHex64b(S[3] ^ K0) + toHex64b(S[4] ^ K1);
+    steps.push({ phase: { es: 'Finalización', en: 'Finalization' }, phaseColor: Cf, operation: 'Tag = (x3 ⊕ K) ‖ (x4 ⊕ K)',
+      description: { es: '<strong>Tag (128 bits):</strong> <code>' + tag + '</code><br>Tag = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low). Autentica AD y ciphertext; cualquier alteración lo cambia por completo.',
+        en: '<strong>Tag (128 bits):</strong> <code>' + tag + '</code><br>Tag = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low). Authenticates AD and ciphertext; any change alters it completely.' },
+      before: [...S], after: [...S], extra: { label: { es: 'Tag', en: 'Tag' }, value: tag, color: 'var(--accent-ascon)' } });
+    return { ct: bh(ct), tag, steps };
+  }
+  function bitsHex(a, b) {
+    const n = Math.min(a.length, b.length); const ch = [];
+    for (let i = 0; i < n; i++) { const x = parseInt(a[i], 16) ^ parseInt(b[i], 16); for (let k = 0; k < 4; k++) if ((x >> (3 - k)) & 1) ch.push(i * 4 + k); }
+    return { changed: ch, total: n * 4, count: ch.length };
+  }
+  function flipHexBit(hex, bitIndex) {
+    const bytes = (hex.match(/.{1,2}/g) || []).map(b => parseInt(b, 16));
+    const byteI = Math.floor(bitIndex / 8), bit = 7 - (bitIndex % 8);
+    if (byteI >= bytes.length || byteI < 0) return hex;
+    bytes[byteI] ^= (1 << bit);
+    return bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+  }
+  return { run, toHex64: toHex64b, diffBits: diffBitsB, bitsHex, flipHexBit };
+})();
+
+window.asconEngine = {
+  _variant: '128a',
+  setVariant(v) { this._variant = v; },
+  run(key, nonce, ad, pt) { return eng.run(this._variant, key, nonce, ad, pt); },
+  toHex64:    eng.toHex64,
+  diffBits:   eng.diffBits,
+  flipHexBit: eng.flipHexBit,
+  bitsHex:    eng.bitsHex
+};
+
 // ==================== PASOS DE EJECUCION PLANOS ====================
 
 function buildExecutionSteps(allSteps) {
@@ -463,7 +585,7 @@ function renderCurrentStep() {
 
   const phaseEl = document.getElementById('asconPhaseInfo');
   if (phaseEl) {
-    phaseEl.textContent = step.phase;
+    phaseEl.textContent = pickLang(step.phase);
     phaseEl.style.color = step.phaseColor || 'var(--accent)';
   }
 
@@ -549,20 +671,15 @@ function runASCON() {
   if (!/^[0-9A-Fa-f]*$/.test(key+nonce+ad+pt)) { showError('Solo caracteres hex (0-9, A-F)'); return; }
 
   try {
-    asconEngine.setVariant(variant);
-    asconEngine.reset();
-    asconEngine.initialize(key, nonce);
-    asconEngine.processAD(ad);
-    const [ciphertext] = asconEngine.encrypt(pt);
-    const [tag]        = asconEngine.finalize(key);
-
-    executionSteps = buildExecutionSteps(asconEngine.allSteps);
+    window.asconEngine.setVariant(variant);
+    const result = window.asconEngine.run(key, nonce, ad, pt);
+    executionSteps = result.steps;
     currentStep    = 0;
 
     const ctEl = document.getElementById('asconCiphertext');
-    if (ctEl) ctEl.textContent = ciphertext || '(vacio)';
+    if (ctEl) ctEl.textContent = result.ct || '(vacio)';
     const tagEl = document.getElementById('asconTag');
-    if (tagEl) tagEl.textContent = tag;
+    if (tagEl) tagEl.textContent = result.tag;
     const resultEl = document.getElementById('asconResult');
     if (resultEl) resultEl.hidden = false;
 
@@ -592,24 +709,19 @@ function compareRuns() {
   if (k1.length !== 32 || n1.length !== 32 || k2.length !== 32 || n2.length !== 32) {
     out.textContent = 'Key y Nonce deben tener 32 chars hex en ambas ejecuciones.'; return;
   }
+  const variant = document.querySelector('input[name="asconVariant"]:checked')?.value || '128a';
   try {
-    const eng1 = new ASCON128a();
-    eng1.initialize(k1,n1); eng1.processAD('');
-    const [ct1]  = eng1.encrypt(pt1);
-    const [tag1] = eng1.finalize(k1);
-
-    const eng2 = new ASCON128a();
-    eng2.initialize(k2,n2); eng2.processAD('');
-    const [ct2]  = eng2.encrypt(pt2);
-    const [tag2] = eng2.finalize(k2);
+    const r1 = eng.run(variant, k1, n1, '', p1);
+    const r2 = eng.run(variant, k2, n2, '', p2);
+    const ct1 = r1.ct, tag1 = r1.tag, ct2 = r2.ct, tag2 = r2.tag;
 
     const tagDiff = [...tag1].filter((c,i) => c !== tag2[i]).length;
     const ctDiff  = (ct1 && ct2 && ct1.length === ct2.length)
       ? [...ct1].filter((c,i) => c !== ct2[i]).length : 'n/a';
     const pct = Math.round(tagDiff / 32 * 100);
 
-    out.textContent =
-'Ejecucion 1\n' +
+    out.innerHTML =
+'<pre>Ejecucion 1\n' +
 '  Key        : ' + k1 + '\n' +
 '  Nonce      : ' + n1 + '\n' +
 '  Ciphertext : ' + (ct1 || '(vacio)') + '\n' +
@@ -622,7 +734,27 @@ function compareRuns() {
 '-----------------------------------------\n' +
 'Diferencia CT  : ' + ctDiff + ' chars hex distintos\n' +
 'Diferencia Tag : ' + tagDiff + ' / 32 chars hex distintos\n' +
-'Efecto avalancha (tag): ~' + pct + '% de diferencia';
+'Efecto avalancha (tag): ~' + pct + '%</pre>';
+
+    // Mostrar gráfico avalancha si hay CT de igual longitud
+    const avWrap = document.getElementById('asconAvalancheWrap');
+    const avPct  = document.getElementById('asconAvalanchePct');
+    if (avWrap && ct1 && ct2 && ct1.length === ct2.length) {
+      const bits = eng.bitsHex(ct1, ct2);
+      avPct.textContent = Math.round(bits.count / bits.total * 100) + '%';
+      avWrap.hidden = false;
+      const canvas = document.getElementById('asconAvalancheCanvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        bits.changed.forEach(i => {
+          const x = Math.floor(i / bits.total * W);
+          ctx.fillStyle = 'var(--accent-ascon)';
+          ctx.fillRect(x, 0, Math.max(1, W / bits.total), H);
+        });
+      }
+    } else if (avWrap) { avWrap.hidden = true; }
   } catch (e) { out.textContent = 'Error: ' + e.message; }
 }
 
@@ -803,10 +935,11 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('asconStartBtn')?.addEventListener('click', runASCON);
 
   document.getElementById('asconResetBtn')?.addEventListener('click', function() {
-    asconEngine.reset(); executionSteps = []; currentStep = 0;
+    executionSteps = []; currentStep = 0;
     var r = document.getElementById('asconResult');    if (r) r.hidden = true;
     var v = document.getElementById('asconVizSection'); if (v) v.hidden = true;
     var ph = document.getElementById('asconPlaceholder'); if (ph) ph.hidden = false;
+    var pw = document.getElementById('asconProgressWrap'); if (pw) pw.hidden = true;
     showError('');
   });
 

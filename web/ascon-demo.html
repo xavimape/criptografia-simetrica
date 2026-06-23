@@ -26,18 +26,33 @@
           evoluciona en cada ronda de inicialización, absorción AD, cifrado y finalización.
         </p>
       </div>
-      <div class="hero-tools">
-        <label class="lang-switch">
-          <span id="langLabel">Idioma</span>
-          <select id="langSelect">
-            <option value="es">Español</option>
-            <option value="en">English</option>
-          </select>
+      <div style="display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;">
+
+        <div style="display:grid; gap:8px;">
+          <span class="ascon-mlabel" id="labelIdioma" data-i18n="language">IDIOMA</span>
+          <div style="display:flex; gap:6px;" role="tablist">
+            <button type="button" class="ci-tab" role="tab" style="padding:8px 14px;"
+                    aria-selected="true" data-lang-pill="es">ES</button>
+            <button type="button" class="ci-tab" role="tab" style="padding:8px 14px;"
+                    aria-selected="false" data-lang-pill="en">EN</button>
+          </div>
+        </div>
+
+        <div style="display:grid; gap:8px;">
+          <span class="ascon-mlabel" data-i18n="variant">ALGORITMO</span>
+          <div style="display:flex; gap:6px;" role="tablist">
+            <button type="button" class="ci-tab" role="tab" style="padding:8px 14px;"
+                    aria-selected="false" data-variant-pill="128">128</button>
+            <button type="button" class="ci-tab" role="tab" style="padding:8px 14px;"
+                    aria-selected="true" data-variant-pill="128a">128a</button>
+          </div>
+        </div>
+
+        <label style="display:grid; gap:8px; min-width:180px;">
+          <span class="ascon-mlabel" data-i18n="theme">TEMA VISUAL</span>
+          <select data-theme-select class="ci-select" title="Tema visual"></select>
         </label>
-        <label style="display:grid;gap:6px;">
-          <span class="ascon-mlabel">Tema</span>
-          <select data-theme-select class="theme-select" style="min-width:190px;"></select>
-        </label>
+
       </div>
     </header>
 

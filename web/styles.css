@@ -1420,3 +1420,52 @@ h3 {
   color: var(--muted);
   text-align: center;
 }
+
+/* ── Hero pill buttons (idioma / algoritmo / tema) ── */
+.ci-tab {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: border-color .18s, background .18s, color .18s;
+}
+.ci-tab[aria-selected="true"] {
+  border-color: var(--accent);
+  background: rgba(0,212,255,.10);
+  color: var(--accent);
+  font-weight: 600;
+}
+.ci-tab[data-variant-pill][aria-selected="true"] {
+  border-color: var(--accent-ascon);
+  background: var(--accent-ascon-glow);
+  color: var(--accent-ascon);
+}
+.ci-tab:hover:not([aria-selected="true"]) {
+  border-color: rgba(0,212,255,.3);
+  background: rgba(0,212,255,.06);
+}
+.ci-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+}
+/* Hero-tools wrapper para la nueva distribución */
+.hero-tools-v2 {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.hero-tools-v2 > div, .hero-tools-v2 > label {
+  display: grid;
+  gap: 8px;
+}

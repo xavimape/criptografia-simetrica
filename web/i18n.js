@@ -52,6 +52,22 @@
     var fn = PAGES[page];
     if (fn) fn();
 
+    /* data-i18n elements */
+    var I18N_MAP = {
+      es: { language: 'IDIOMA', variant: 'ALGORITMO', theme: 'TEMA VISUAL' },
+      en: { language: 'LANGUAGE', variant: 'ALGORITHM', theme: 'VISUAL THEME' }
+    };
+    var map = I18N_MAP[lang] || I18N_MAP['es'];
+    qa('[data-i18n]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n');
+      if (map[key]) tc(el, lang === 'en' ? map[key] : null);
+    });
+
+    /* Sync lang pill buttons */
+    qa('[data-lang-pill]').forEach(function (btn) {
+      btn.setAttribute('aria-selected', String(btn.getAttribute('data-lang-pill') === lang));
+    });
+
     /* Notify app.js listeners */
     window.dispatchEvent(new CustomEvent('langchange', { detail: { lang: lang } }));
   }

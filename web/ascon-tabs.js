@@ -89,6 +89,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderTabState();
 
+  // ── Pills idioma ──────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-lang-pill]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const lang = this.dataset.langPill;
+      document.querySelectorAll('[data-lang-pill]').forEach(b =>
+        b.setAttribute('aria-selected', String(b.dataset.langPill === lang)));
+      if (typeof window.setLang === 'function') window.setLang(lang);
+      // i18n.js: dispara a través del select existente si lo hay
+      const sel = document.getElementById('langSelect');
+      if (sel) { sel.value = lang; sel.dispatchEvent(new Event('change')); }
+    });
+  });
+
+  // ── Pills algoritmo ───────────────────────────────────────────────────────
+  document.querySelectorAll('[data-variant-pill]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const v = this.dataset.variantPill;
+      document.querySelectorAll('[data-variant-pill]').forEach(b =>
+        b.setAttribute('aria-selected', String(b.dataset.variantPill === v)));
+      const r = document.getElementById('asconVariant' + v);
+      if (r) { r.checked = true; r.dispatchEvent(new Event('change')); }
+      if (window.asconEngine) window.asconEngine.setVariant(v);
+    });
+  });
+
   // ── Play/Pause con velocidad ──────────────────────────────────────────────
   let asconPlayInterval = null;
   const playBtn  = document.getElementById('asconPlayBtn');
@@ -126,24 +151,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ── KAT Vectores ──────────────────────────────────────────────────────────
   const KAT_128A = [
-    { label:'V1 — todo ceros, AD vacío, PT vacío',
-      key:'00000000000000000000000000000000',
-      nonce:'00000000000000000000000000000000',
-      ad:'', pt:'', expectedCt:'', expectedTag:'E355159F292571BC8B0F0B1D0B9ED2B4' },
-    { label:'V2 — todo ceros, AD=00, PT vacío',
-      key:'00000000000000000000000000000000',
-      nonce:'00000000000000000000000000000000',
-      ad:'00', pt:'', expectedCt:'', expectedTag:'1B64D2B6B5D9CE8C8D0D86A9F74F6B4A' },
-    { label:'V3 — todo ceros, AD vacío, PT=00',
-      key:'00000000000000000000000000000000',
-      nonce:'00000000000000000000000000000000',
-      ad:'', pt:'00', expectedCt:'5E', expectedTag:'D40B2C0B3B7FE4F0BAF4B9D88D7D6898' },
+    { label:'Count 1 · sin AD, sin PT', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'', expectedCt:'', expectedTag:'7A834E6F09210957067B10FD831F0078' },
+    { label:'Count 17 · AD 16B, sin PT', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'000102030405060708090A0B0C0D0E0F', pt:'', expectedCt:'', expectedTag:'56C15EB024DE91CA0165362A49B31EBD' },
+    { label:'Count 34 · PT=00, sin AD', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'00', expectedCt:'6E', expectedTag:'652B55BFDC8CAD2EC43815B1666B1A3A' },
+    { label:'Count 50 · AD 16B + PT=00', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'000102030405060708090A0B0C0D0E0F', pt:'00', expectedCt:'52', expectedTag:'CDCC8F91E862ACACC86437163F8D31D6' },
+    { label:'Count 100 · PT 3B', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'000102', expectedCt:'6E490C', expectedTag:'898CD14E8316E149A6EDFC3B16C23A4E' },
+    { label:'Count 133 · PT 4B', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'00010203', expectedCt:'6E490CFE', expectedTag:'C328490A65C362CDCE54A9D9B12D5074' },
+    { label:'Count 199 · PT 6B', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'000102030405', expectedCt:'6E490CFED5B3', expectedTag:'0DB2813B8707D404BFE96887CBB64D1B' },
   ];
   const KAT_128 = [
-    { label:'V1 — todo ceros, AD vacío, PT vacío',
-      key:'00000000000000000000000000000000',
-      nonce:'00000000000000000000000000000000',
-      ad:'', pt:'', expectedCt:'', expectedTag:'7A834BD8D31A7E67BD2D94BC29E56A3C' },
+    { label:'Count 1 · sin AD, sin PT', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'', expectedCt:'', expectedTag:'E355159F292911F794CB1432A0103A8A' },
+    { label:'Count 17 · AD 16B, sin PT', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'000102030405060708090A0B0C0D0E0F', pt:'', expectedCt:'', expectedTag:'EF5763E75FE32F96D7863410FF0B4786' },
+    { label:'Count 34 · PT=00, sin AD', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'00', expectedCt:'BC', expectedTag:'18C3F4E39ECA7222490D967C79BFFC92' },
+    { label:'Count 50 · AD 16B + PT=00', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'000102030405060708090A0B0C0D0E0F', pt:'00', expectedCt:'1E', expectedTag:'E4C30EAE829E2C5569A1D688C2616AEE' },
+    { label:'Count 100 · PT 3B', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'000102', expectedCt:'BC820D', expectedTag:'5BCA14147915031C69F6B27848A7EE29' },
+    { label:'Count 133 · PT 4B', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'00010203', expectedCt:'BC820DBD', expectedTag:'218C5C93E3850E974A3704D1223BDEFB' },
+    { label:'Count 199 · PT 6B', key:'000102030405060708090A0B0C0D0E0F', nonce:'000102030405060708090A0B0C0D0E0F', ad:'', pt:'000102030405', expectedCt:'BC820DBDF7A4', expectedTag:'0AE9AF4985E97254DAF329422C950FAD' },
   ];
 
   const katVariantSel = document.getElementById('katVariantSel');
@@ -174,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     window.asconEngine.setVariant(variant);
-    const res = window.asconEngine.encrypt(vec.key, vec.nonce, vec.ad, vec.pt);
+    const res = window.asconEngine.run(vec.key, vec.nonce, vec.ad, vec.pt);
     const ctMatch  = (res.ct  || '').toUpperCase() === vec.expectedCt.toUpperCase();
     const tagMatch = (res.tag || '').toUpperCase() === vec.expectedTag.toUpperCase();
     const ok = ctMatch && tagMatch;
