@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Demo Lab — AES Visualizer</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="theme-switcher.js"></script>
     <script defer src="aes-app.js"></script>
     <script defer src="aes-tabs.js"></script>
     <script defer src="aes-enhancements.js"></script>
@@ -34,6 +35,10 @@
               <option value="es">Español</option>
               <option value="en">English</option>
             </select>
+          </label>
+          <label style="display:grid;gap:6px;">
+            <span class="ascon-mlabel">Tema</span>
+            <select data-theme-select class="theme-select" style="min-width:190px;"></select>
           </label>
         </div>
       </header>

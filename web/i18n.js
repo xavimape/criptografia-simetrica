@@ -52,6 +52,22 @@
     var fn = PAGES[page];
     if (fn) fn();
 
+    /* data-i18n elements */
+    var I18N_MAP = {
+      es: { language: 'IDIOMA', variant: 'ALGORITMO', theme: 'TEMA VISUAL' },
+      en: { language: 'LANGUAGE', variant: 'ALGORITHM', theme: 'VISUAL THEME' }
+    };
+    var map = I18N_MAP[lang] || I18N_MAP['es'];
+    qa('[data-i18n]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n');
+      if (map[key]) tc(el, lang === 'en' ? map[key] : null);
+    });
+
+    /* Sync lang pill buttons */
+    qa('[data-lang-pill]').forEach(function (btn) {
+      btn.setAttribute('aria-selected', String(btn.getAttribute('data-lang-pill') === lang));
+    });
+
     /* Notify app.js listeners */
     window.dispatchEvent(new CustomEvent('langchange', { detail: { lang: lang } }));
   }
@@ -64,6 +80,8 @@
       existing.addEventListener('change', function (e) { applyLang(e.target.value); });
       return;
     }
+    /* Si la página ya tiene pills de idioma (hero-controls), no inyectar el select */
+    if (document.querySelector('[data-lang-pill]')) return;
     /* Inject into .hero > div or .hero */
     var target = q('.hero > div') || q('.hero');
     if (!target) return;
@@ -670,6 +688,10 @@
   /* ══════════════════════════════════════════════════════════════════════════
    * INIT
    * ══════════════════════════════════════════════════════════════════════════ */
+  /* Exponer applyLang globalmente para que las pills de idioma puedan llamarla
+     sin depender de un #langSelect inyectado */
+  window.setLang = applyLang;
+
   document.addEventListener('DOMContentLoaded', function () {
     initSelect();
 

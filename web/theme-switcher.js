@@ -1,0 +1,6 @@
+const THEMES=[{id:'vision-ui',label:'🌌 Vision UI (Azul Espacial)'},{id:'midnight-aurora',label:'🌙 Midnight Aurora (Morado/Teal)'},{id:'cyberpunk-neon',label:'⚡ Cyberpunk Neon (Magenta/Verde)'},{id:'forest-moss',label:'🌿 Forest Moss (Verde/Ámbar)'},{id:'solarized-sand',label:'☀️ Solarized Sand (Claro/Cálido)'},{id:'nordic-frost',label:'❄️ Nordic Frost (Ártico Claro)'},{id:'monochrome-slate',label:'🩶 Monochrome Slate (Gris Corporativo)'}];
+const STORAGE_KEY='site-theme';
+function applyTheme(id){document.documentElement.setAttribute('data-theme',id);try{localStorage.setItem(STORAGE_KEY,id);}catch(e){}document.querySelectorAll('[data-theme-select]').forEach(s=>s.value=id);}
+function getSavedTheme(){try{return localStorage.getItem(STORAGE_KEY)||'vision-ui';}catch(e){return'vision-ui';}}
+(function(){const s=getSavedTheme();if(s!=='vision-ui')document.documentElement.setAttribute('data-theme',s);})();
+document.addEventListener('DOMContentLoaded',()=>{const saved=getSavedTheme();applyTheme(saved);document.querySelectorAll('[data-theme-select]').forEach(sel=>{if(sel.options.length===0){THEMES.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.label;sel.appendChild(o);});}sel.value=saved;sel.addEventListener('change',()=>applyTheme(sel.value));});});

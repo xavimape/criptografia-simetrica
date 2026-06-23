@@ -15,11 +15,6 @@ function pickLang(v) {
   if (v && typeof v === 'object') return v[L] || v.es || '';
   return v || '';
 }
-function asconTc(el, enText) {
-  if (!el) return;
-  if (el._i18nOrig === undefined) el._i18nOrig = el.textContent;
-  el.textContent = (getLang() === 'en') ? enText : el._i18nOrig;
-}
 
 
 // ==================== CONSTANTES ====================
@@ -28,14 +23,14 @@ const ASCON_RC = [
   0xf0n, 0xe1n, 0xd2n, 0xc3n, 0xb4n, 0xa5n,
   0x96n, 0x87n, 0x78n, 0x69n, 0x5an, 0x4bn
 ];
-const ASCON_IV = 0x80400c0600000000n;
+const ASCON_IV = 0x80800c0800000000n; // ASCON-128a: k=128, rate=128, pa=12, pb=8
 const MASK64   = (1n << 64n) - 1n;
 
 // ==================== OPERACIONES BÁSICAS ====================
 
-function rol64(value, shift) {
+function ror64(value, shift) {
   const s = BigInt(shift);
-  return ((value << s) | (value >> (64n - s))) & MASK64;
+  return ((value >> s) | (value << (64n - s))) & MASK64;
 }
 
 function toHex64(value) {
@@ -71,9 +66,9 @@ function asconPad(dataHex, blockSizeChars = 16) {
 
 function asconSbox(x0, x1, x2, x3, x4) {
   x0 ^= x4; x4 ^= x3; x2 ^= x1;
-  const t0 = x0 & (~x1 & MASK64), t1 = x1 & (~x2 & MASK64),
-        t2 = x2 & (~x3 & MASK64), t3 = x3 & (~x4 & MASK64),
-        t4 = x4 & (~x0 & MASK64);
+  const t0 = (~x0 & MASK64) & x1, t1 = (~x1 & MASK64) & x2,
+        t2 = (~x2 & MASK64) & x3, t3 = (~x3 & MASK64) & x4,
+        t4 = (~x4 & MASK64) & x0;
   x0 ^= t1; x1 ^= t2; x2 ^= t3; x3 ^= t4; x4 ^= t0;
   x1 ^= x0; x0 ^= x4; x3 ^= x2; x2 = (~x2) & MASK64;
   return [x0 & MASK64, x1 & MASK64, x2 & MASK64, x3 & MASK64, x4 & MASK64];
@@ -81,11 +76,11 @@ function asconSbox(x0, x1, x2, x3, x4) {
 
 function linearLayer(x0, x1, x2, x3, x4) {
   return [
-    (x0 ^ rol64(x0, 19) ^ rol64(x0, 28)) & MASK64,
-    (x1 ^ rol64(x1, 61) ^ rol64(x1, 39)) & MASK64,
-    (x2 ^ rol64(x2,  1) ^ rol64(x2,  6)) & MASK64,
-    (x3 ^ rol64(x3, 10) ^ rol64(x3, 17)) & MASK64,
-    (x4 ^ rol64(x4,  7) ^ rol64(x4, 41)) & MASK64
+    (x0 ^ ror64(x0, 19) ^ ror64(x0, 28)) & MASK64,
+    (x1 ^ ror64(x1, 61) ^ ror64(x1, 39)) & MASK64,
+    (x2 ^ ror64(x2,  1) ^ ror64(x2,  6)) & MASK64,
+    (x3 ^ ror64(x3, 10) ^ ror64(x3, 17)) & MASK64,
+    (x4 ^ ror64(x4,  7) ^ ror64(x4, 41)) & MASK64
   ];
 }
 
@@ -114,10 +109,30 @@ function permutation(state, rounds, startRound = 0) {
   return [state, allDetails];
 }
 
-// ==================== MOTOR ASCON-128a ====================
+// ==================== MOTOR ASCON (128 y 128a) ====================
 
 class ASCON128a {
-  constructor() { this.state = [0n,0n,0n,0n,0n]; this.allSteps = []; }
+  constructor(variant) {
+    this.state = [0n,0n,0n,0n,0n]; this.allSteps = [];
+    this._applyVariant(variant || '128a');
+  }
+
+  _applyVariant(variant) {
+    this.variant = variant;
+    if (variant === '128') {
+      this.iv = 0x80400c0600000000n; // k=128, rate=64, pa=12, pb=6
+      this.rateChars = 16;           // 8 bytes per block
+      this.pb = 6; this.pbRcStart = 6;
+      this.fkr = 1;                  // finalization key XOR at x1,x2
+    } else {                         // '128a'
+      this.iv = ASCON_IV;            // 0x80800c0800000000n
+      this.rateChars = 32;           // 16 bytes per block
+      this.pb = 8; this.pbRcStart = 4;
+      this.fkr = 2;                  // finalization key XOR at x2,x3
+    }
+  }
+
+  setVariant(v) { this._applyVariant(v); }
 
   reset() { this.state = [0n,0n,0n,0n,0n]; this.allSteps = []; }
 
@@ -125,67 +140,89 @@ class ASCON128a {
     const key   = hexToInt(keyHex),  nonce = hexToInt(nonceHex);
     const kh    = (key   >> 64n) & MASK64, kl = key   & MASK64;
     const nh    = (nonce >> 64n) & MASK64, nl = nonce & MASK64;
-    this.state  = [ASCON_IV, kh, kl, nh, nl];
+    this.state  = [this.iv, kh, kl, nh, nl];
     const initial = [...this.state];
     let roundDetails;
     [this.state, roundDetails] = permutation(this.state, 12, 0);
     const afterPerm = [...this.state];
     this.state[3] ^= kh; this.state[4] ^= kl;
-    const d = { phase:'Inicializacion', stepType:'init',
+    const d = { phase:'Inicializacion', stepType:'init', variant:this.variant,
       initialState: initial, rounds: roundDetails,
       stateAfterPerm: afterPerm, finalState: [...this.state],
-      iv: ASCON_IV, keyHigh: kh, keyLow: kl, nonceHigh: nh, nonceLow: nl };
+      iv: this.iv, keyHigh: kh, keyLow: kl, nonceHigh: nh, nonceLow: nl };
     this.allSteps.push(d); return d;
   }
 
   processAD(adHex) {
-    const d = { phase:'Absorcion AD', stepType:'ad', blocks:[] };
-    if (!adHex) {
+    const rc = this.rateChars;
+    const d = { phase:'Absorcion AD', stepType:'ad', blocks:[], variant:this.variant, pb:this.pb };
+    if (!adHex || !adHex.trim()) {
       const before = [...this.state]; this.state[4] ^= 1n;
       d.noAd = true; d.stateBefore = before; d.finalState = [...this.state];
       this.allSteps.push(d); return d;
     }
-    const blocks = adHex.match(/.{1,16}/g) || [];
+    let padded = adHex.toUpperCase() + '80';
+    const rem = padded.length % rc; if (rem) padded += '0'.repeat(rc - rem);
+    const blocks = padded.match(new RegExp('.{' + rc + '}', 'g')) || [];
     for (let i = 0; i < blocks.length; i++) {
-      const isLast = i === blocks.length - 1;
-      const padded = isLast ? asconPad(blocks[i], 16) : blocks[i].padEnd(16,'0');
-      const bInt   = hexToInt(padded);
-      const sb     = [...this.state];
-      this.state[0] ^= bInt;
+      const origHex = adHex.slice(i * rc, (i + 1) * rc);
+      const bHi = BigInt('0x' + blocks[i].slice(0, 16));
+      const bLo = rc === 32 ? BigInt('0x' + blocks[i].slice(16, 32)) : 0n;
+      const sb = [...this.state];
+      this.state[0] ^= bHi;
+      if (rc === 32) this.state[1] ^= bLo;
       const afterXor = [...this.state];
-      let rds; [this.state, rds] = permutation(this.state, 6, 6);
-      d.blocks.push({ blockNum:i, blockHex:padded, originalHex:blocks[i],
+      let rds; [this.state, rds] = permutation(this.state, this.pb, this.pbRcStart);
+      d.blocks.push({ blockNum:i, blockHex:blocks[i], originalHex:origHex,
         stateBefore:sb, afterXor, rounds:rds, stateAfter:[...this.state],
-        isLast, paddingApplied: isLast && blocks[i].length < 16 });
+        isLast: i === blocks.length - 1, paddingApplied: origHex.length < rc });
     }
-    const lastBefore = d.blocks.length ? d.blocks[d.blocks.length-1].stateAfter : [...this.state];
+    const lastBefore = d.blocks[d.blocks.length - 1].stateAfter;
     this.state[4] ^= 1n;
     d.finalState = [...this.state]; d.domSepBefore = lastBefore;
     this.allSteps.push(d); return d;
   }
 
   encrypt(ptHex) {
-    const d = { phase:'Cifrado', stepType:'encrypt', blocks:[] };
+    const rc = this.rateChars, rateBytes = rc / 2;
+    const d = { phase:'Cifrado', stepType:'encrypt', blocks:[], variant:this.variant, pb:this.pb };
     let ct = '';
-    if (!ptHex) { d.noPlaintext = true; this.allSteps.push(d); return ['', d]; }
-    const blocks = ptHex.match(/.{1,16}/g) || [];
+    const ptClean = (ptHex || '').toUpperCase().replace(/\s+/g, '');
+    const ptBytes = ptClean.length / 2;
+    let paddedPT = ptClean + '80';
+    const rem = paddedPT.length % rc; if (rem) paddedPT += '0'.repeat(rc - rem);
+    const blocks = paddedPT.match(new RegExp('.{' + rc + '}', 'g')) || [];
+    const lastPtBytes = ptBytes % rateBytes;
     for (let i = 0; i < blocks.length; i++) {
-      const isLast  = i === blocks.length - 1;
-      const isShort = isLast && blocks[i].length < 16;
-      const padded  = isShort ? asconPad(blocks[i], 16) : blocks[i].padEnd(16,'0');
-      const ptFull  = hexToInt(padded);
-      const ptReal  = isShort ? hexToInt(blocks[i].padEnd(16,'0')) : ptFull;
-      const sb      = [...this.state];
-      const ctBlock = this.state[0] ^ ptReal;
-      const ctHex   = toHex64(ctBlock);
-      ct += isShort ? ctHex.slice(0, blocks[i].length) : ctHex;
-      this.state[0] = isShort ? (this.state[0] ^ ptFull) : ctBlock;
+      const isLast = i === blocks.length - 1;
+      const bHi = BigInt('0x' + blocks[i].slice(0, 16));
+      const bLo = rc === 32 ? BigInt('0x' + blocks[i].slice(16, 32)) : 0n;
+      const sb = [...this.state];
+      const xorHi = this.state[0] ^ bHi;
+      const xorLo = this.state[1] ^ bLo;
+      let ctHex = '';
+      if (!isLast) {
+        ctHex = rc === 32 ? toHex64(xorHi) + toHex64(xorLo) : toHex64(xorHi);
+        ct += ctHex;
+        this.state[0] = xorHi;
+        if (rc === 32) this.state[1] = xorLo;
+      } else {
+        const n = lastPtBytes;
+        if (n > 0) {
+          ctHex = (rc === 16 || n <= 8)
+            ? toHex64(xorHi).slice(0, n * 2)
+            : toHex64(xorHi) + toHex64(xorLo).slice(0, (n - 8) * 2);
+          ct += ctHex;
+        }
+        this.state[0] ^= bHi;
+        if (rc === 32) this.state[1] ^= bLo;
+      }
       const afterXor = [...this.state];
-      let rds; [this.state, rds] = permutation(this.state, 12, 0);
-      d.blocks.push({ blockNum:i, plaintextHex:blocks[i], plaintextPaddedHex:padded,
-        stateBefore:sb, afterXor, rounds:rds, stateAfter:[...this.state],
-        ciphertextHex: isShort ? ctHex.slice(0, blocks[i].length) : ctHex,
-        isLast });
+      let rds = [];
+      if (!isLast) [this.state, rds] = permutation(this.state, this.pb, this.pbRcStart);
+      d.blocks.push({ blockNum:i, plaintextHex:ptClean.slice(i*rc,(i+1)*rc),
+        plaintextPaddedHex:blocks[i], stateBefore:sb, afterXor, rounds:rds,
+        stateAfter:[...this.state], ciphertextHex:ctHex, isLast });
     }
     d.ciphertext = ct; this.allSteps.push(d); return [ct, d];
   }
@@ -193,13 +230,13 @@ class ASCON128a {
   finalize(keyHex) {
     const keyInt = hexToInt(keyHex);
     const kh = (keyInt >> 64n) & MASK64, kl = keyInt & MASK64;
-    const sb = [...this.state];
-    this.state[1] ^= kh; this.state[2] ^= kl;
+    const sb = [...this.state], r = this.fkr;
+    this.state[r] ^= kh; this.state[r + 1] ^= kl;
     const afterKeyXor = [...this.state];
     let rds; [this.state, rds] = permutation(this.state, 12, 0);
     const tagHigh = this.state[3] ^ kh, tagLow = this.state[4] ^ kl;
     const tag = toHex64(tagHigh) + toHex64(tagLow);
-    const d = { phase:'Finalizacion', stepType:'finalize',
+    const d = { phase:'Finalizacion', stepType:'finalize', variant:this.variant, fkr:r,
       stateBefore:sb, afterKeyXor, rounds:rds,
       stateAfterPerm:[...this.state], tag, tagHigh, tagLow };
     this.allSteps.push(d); return [tag, d];
@@ -214,6 +251,128 @@ class ASCON128a {
     return { ciphertext, tag, steps: this.allSteps };
   }
 }
+
+// ==================== MOTOR BUNDLE (spec-fiel · KAT v1.2) ====================
+
+/* Motor extraído del bundle de referencia. Verificado contra KAT oficiales ascon-c@v1.2.8. */
+const eng = (function () {
+  const RC = [0xf0n,0xe1n,0xd2n,0xc3n,0xb4n,0xa5n,0x96n,0x87n,0x78n,0x69n,0x5an,0x4bn];
+  const MASK = (1n << 64n) - 1n;
+  const FF = 0xFFFFFFFFFFFFFFFFn;
+  const rotr = (x, n) => ((x >> BigInt(n)) | (x << BigInt(64 - n))) & MASK;
+  const toHex64b = v => v.toString(16).toUpperCase().padStart(16, '0');
+  const diffBitsB = (a, b) => { const x = a ^ b; let n = 0; for (let i = 0; i < 64; i++) if ((x >> BigInt(i)) & 1n) n++; return n; };
+  const hexBytes = h => { const a = []; h = (h || '').replace(/\s+/g, ''); for (let i = 0; i + 1 < h.length; i += 2) a.push(parseInt(h.substr(i, 2), 16)); return a; };
+  const wf = (a, o) => { let v = 0n; for (let i = 0; i < 8; i++) v = (v << 8n) | BigInt(a[o + i] || 0); return v & MASK; };
+  const bo = v => { const a = []; for (let i = 7; i >= 0; i--) a.push(Number((v >> BigInt(i * 8)) & 0xffn)); return a; };
+  const bh = a => a.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+  function roundStep(S, r) {
+    S[2] ^= RC[r];
+    S[0] ^= S[4]; S[4] ^= S[3]; S[2] ^= S[1];
+    const T = []; for (let i = 0; i < 5; i++) T.push(((S[i] ^ FF) & S[(i + 1) % 5]) & MASK);
+    for (let i = 0; i < 5; i++) S[i] = (S[i] ^ T[(i + 1) % 5]) & MASK;
+    S[1] ^= S[0]; S[0] ^= S[4]; S[3] ^= S[2]; S[2] ^= FF;
+    S[0] = (S[0] ^ rotr(S[0], 19) ^ rotr(S[0], 28)) & MASK;
+    S[1] = (S[1] ^ rotr(S[1], 61) ^ rotr(S[1], 39)) & MASK;
+    S[2] = (S[2] ^ rotr(S[2],  1) ^ rotr(S[2],  6)) & MASK;
+    S[3] = (S[3] ^ rotr(S[3], 10) ^ rotr(S[3], 17)) & MASK;
+    S[4] = (S[4] ^ rotr(S[4],  7) ^ rotr(S[4], 41)) & MASK;
+  }
+  function permSteps(S, rounds, steps, color, esPh, enPh) {
+    const start = 12 - rounds;
+    for (let r = start; r < 12; r++) {
+      const before = [...S]; roundStep(S, r); const k = r - start + 1;
+      steps.push({ phase: { es: esPh + ' · Ronda ' + k + '/' + rounds, en: enPh + ' · Round ' + k + '/' + rounds },
+        phaseColor: color, operation: 'RC ⊕ x2 → S-box → difusión',
+        description: { es: '<strong>Constante de ronda RC = 0x' + RC[r].toString(16).toUpperCase() + '</strong> (XOR en x2).<br><strong>S-box</strong> de 5 bits en las 64 columnas (no-linealidad) y <strong>capa lineal</strong> con rotaciones a derecha (difusión intra-registro).',
+          en: '<strong>Round constant RC = 0x' + RC[r].toString(16).toUpperCase() + '</strong> (XOR on x2).<br>5-bit <strong>S-box</strong> across 64 columns (nonlinearity) and <strong>linear layer</strong> with right rotations (intra-register diffusion).' },
+        before, after: [...S] });
+    }
+  }
+  function run(variant, keyH, nonceH, adH, ptH) {
+    const a128 = variant === '128a';
+    const rate = a128 ? 16 : 8, b = a128 ? 8 : 6, IV = a128 ? 0x80800c0800000000n : 0x80400c0600000000n;
+    const rW = a128 ? 'x0‖x1' : 'x0';
+    const Ci = 'var(--accent)', Ca = '#34d399', Ce = 'var(--accent-2)', Cf = 'var(--accent-ascon)';
+    const steps = [];
+    const key = hexBytes(keyH), nonce = hexBytes(nonceH);
+    const K0 = wf(key, 0), K1 = wf(key, 8);
+    let S = [IV, K0, K1, wf(nonce, 0), wf(nonce, 8)];
+    steps.push({ phase: { es: 'Inicialización', en: 'Initialization' }, phaseColor: Ci, operation: 'IV ‖ Key ‖ Nonce',
+      description: { es: 'El estado de 320 bits se arma con <strong>x0 = IV</strong> (0x' + IV.toString(16).toUpperCase() + ', identifica ASCON-' + variant + ': rate ' + (rate * 8) + ' bits, pa=12, pb=' + b + '), <strong>x1‖x2 = Key</strong> y <strong>x3‖x4 = Nonce</strong>.',
+        en: 'The 320-bit state is built as <strong>x0 = IV</strong> (0x' + IV.toString(16).toUpperCase() + ', identifies ASCON-' + variant + ': rate ' + (rate * 8) + ' bits, pa=12, pb=' + b + '), <strong>x1‖x2 = Key</strong> and <strong>x3‖x4 = Nonce</strong>.' },
+      before: [0n,0n,0n,0n,0n], after: [...S] });
+    permSteps(S, 12, steps, Ci, 'Inicialización · pa', 'Initialization · pa');
+    let bk = [...S]; S[3] ^= K0; S[4] ^= K1;
+    steps.push({ phase: { es: 'Inicialización', en: 'Initialization' }, phaseColor: Ci, operation: 'x3 ⊕ K_high ; x4 ⊕ K_low',
+      description: { es: 'La clave se XOR en <strong>x3</strong> y <strong>x4</strong> (capacidad), fijando el estado inicial a Key y Nonce.', en: 'The key is XOR-ed into <strong>x3</strong> and <strong>x4</strong> (capacity), binding the initial state to Key and Nonce.' },
+      before: bk, after: [...S] });
+    const ad = hexBytes(adH);
+    if (ad.length > 0) {
+      const padA = ad.concat([0x80]); while (padA.length % rate) padA.push(0);
+      const nb = padA.length / rate;
+      for (let i = 0; i < nb; i++) {
+        const o = i * rate; const b0 = [...S];
+        S[0] ^= wf(padA, o); if (a128) S[1] ^= wf(padA, o + 8);
+        steps.push({ phase: { es: 'AD · Bloque ' + (i + 1), en: 'AD · Block ' + (i + 1) }, phaseColor: Ca, operation: rW + ' ⊕= AD',
+          description: { es: 'El bloque AD se XOR sobre el <strong>rate</strong> (' + rW + ', ' + (rate * 8) + ' bits); luego pb (' + b + ' rondas). El AD queda autenticado por el tag.',
+            en: 'AD block XOR-ed onto the <strong>rate</strong> (' + rW + ', ' + (rate * 8) + ' bits); then pb (' + b + ' rounds). The AD is authenticated by the tag.' },
+          before: b0, after: [...S] });
+        permSteps(S, b, steps, Ca, 'AD · pb', 'AD · pb');
+      }
+    }
+    let bd = [...S]; S[4] ^= 1n;
+    steps.push({ phase: { es: 'Separación de dominio', en: 'Domain separation' }, phaseColor: Ca, operation: 'x4 ⊕= 1',
+      description: { es: 'El bit 0 de x4 se invierte: distingue el procesamiento de AD del de cifrado.', en: 'Bit 0 of x4 is flipped: separates AD processing from encryption.' },
+      before: bd, after: [...S] });
+    const pt = hexBytes(ptH); const plast = pt.length % rate;
+    const padP = pt.concat([0x80]); while (padP.length % rate) padP.push(0);
+    const nb2 = padP.length / rate; let ct = [];
+    for (let i = 0; i < nb2; i++) {
+      const o = i * rate, isLast = i === nb2 - 1; const b0 = [...S];
+      S[0] ^= wf(padP, o); let cb = bo(S[0]); if (a128) { S[1] ^= wf(padP, o + 8); cb = cb.concat(bo(S[1])); }
+      const out = isLast ? cb.slice(0, plast) : cb; ct = ct.concat(out);
+      steps.push({ phase: { es: 'Cifrado · Bloque ' + (i + 1), en: 'Encrypt · Block ' + (i + 1) }, phaseColor: Ce, operation: 'CT = ' + rW + ' ⊕ PT',
+        description: { es: 'CT = rate ⊕ PT; estado actualizado con CT. CT de este bloque: <code>' + (bh(out) || '∅') + '</code>.', en: 'CT = rate ⊕ PT; state updated with CT. This block CT: <code>' + (bh(out) || '∅') + '</code>.' },
+        before: b0, after: [...S], extra: { label: { es: 'CT bloque', en: 'block CT' }, value: bh(out) || '∅', color: 'var(--accent-2)' } });
+      if (!isLast) permSteps(S, b, steps, Ce, 'Cifrado · pb', 'Encrypt · pb');
+    }
+    const r8 = rate / 8; let bf = [...S]; S[r8] ^= K0; S[r8 + 1] ^= K1;
+    steps.push({ phase: { es: 'Finalización', en: 'Finalization' }, phaseColor: Cf, operation: 'x' + r8 + ' ⊕ K_high ; x' + (r8 + 1) + ' ⊕ K_low',
+      description: { es: 'La clave se XOR en x' + r8 + ', x' + (r8 + 1) + ' antes de la última pa de 12 rondas.', en: 'Key XOR-ed into x' + r8 + ', x' + (r8 + 1) + ' before the final 12-round pa.' },
+      before: bf, after: [...S] });
+    permSteps(S, 12, steps, Cf, 'Finalización · pa', 'Finalization · pa');
+    const tag = toHex64b(S[3] ^ K0) + toHex64b(S[4] ^ K1);
+    steps.push({ phase: { es: 'Finalización', en: 'Finalization' }, phaseColor: Cf, operation: 'Tag = (x3 ⊕ K) ‖ (x4 ⊕ K)',
+      description: { es: '<strong>Tag (128 bits):</strong> <code>' + tag + '</code><br>Tag = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low). Autentica AD y ciphertext; cualquier alteración lo cambia por completo.',
+        en: '<strong>Tag (128 bits):</strong> <code>' + tag + '</code><br>Tag = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low). Authenticates AD and ciphertext; any change alters it completely.' },
+      before: [...S], after: [...S], extra: { label: { es: 'Tag', en: 'Tag' }, value: tag, color: 'var(--accent-ascon)' } });
+    return { ct: bh(ct), tag, steps };
+  }
+  function bitsHex(a, b) {
+    const n = Math.min(a.length, b.length); const ch = [];
+    for (let i = 0; i < n; i++) { const x = parseInt(a[i], 16) ^ parseInt(b[i], 16); for (let k = 0; k < 4; k++) if ((x >> (3 - k)) & 1) ch.push(i * 4 + k); }
+    return { changed: ch, total: n * 4, count: ch.length };
+  }
+  function flipHexBit(hex, bitIndex) {
+    const bytes = (hex.match(/.{1,2}/g) || []).map(b => parseInt(b, 16));
+    const byteI = Math.floor(bitIndex / 8), bit = 7 - (bitIndex % 8);
+    if (byteI >= bytes.length || byteI < 0) return hex;
+    bytes[byteI] ^= (1 << bit);
+    return bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join('');
+  }
+  return { run, toHex64: toHex64b, diffBits: diffBitsB, bitsHex, flipHexBit };
+})();
+
+window.asconEngine = {
+  _variant: '128a',
+  setVariant(v) { this._variant = v; },
+  run(key, nonce, ad, pt) { return eng.run(this._variant, key, nonce, ad, pt); },
+  toHex64:    eng.toHex64,
+  diffBits:   eng.diffBits,
+  flipHexBit: eng.flipHexBit,
+  bitsHex:    eng.bitsHex
+};
 
 // ==================== PASOS DE EJECUCION PLANOS ====================
 
@@ -277,10 +436,10 @@ function buildExecutionSteps(allSteps) {
           steps.push({
             phase: 'AD Bloque ' + (blk.blockNum + 1), phaseColor: pc,
             title: 'Absorcion AD — Bloque ' + (blk.blockNum + 1) + ': XOR estado',
-            operation: 'x0 XOR= 0x' + blk.blockHex,
+            operation: (phase.variant==='128' ? 'x0' : 'x0||x1') + ' XOR= 0x' + blk.blockHex,
             description: {
-              es: 'El bloque AD (<code>' + blk.blockHex + '</code>' + (blk.paddingApplied ? ', padding aplicado' : '') + ') se XOR sobre <strong>x0</strong> del estado (los 64 bits del rate). Esto absorbe el AD en el estado sin exponerlo directamente.',
-              en: 'AD block (<code>' + blk.blockHex + '</code>' + (blk.paddingApplied ? ', padding applied' : '') + ') is XOR-ed onto <strong>x0</strong> of the state (the 64-bit rate). This absorbs the AD into the state without directly exposing it.'
+              es: 'El bloque AD (<code>' + blk.blockHex + '</code>' + (blk.paddingApplied ? ', padding aplicado' : '') + ') se XOR sobre <strong>' + (phase.variant==='128'?'x0':'x0 y x1') + '</strong> del estado (' + (phase.variant==='128'?'64':'128') + ' bits del rate en ASCON-' + (phase.variant==='128'?'128':'128a') + '). Esto absorbe el AD en el estado sin exponerlo directamente.',
+              en: 'AD block (<code>' + blk.blockHex + '</code>' + (blk.paddingApplied ? ', padding applied' : '') + ') is XOR-ed onto <strong>' + (phase.variant==='128'?'x0':'x0 and x1') + '</strong> of the state (' + (phase.variant==='128'?'64':'128') + '-bit rate in ASCON-' + (phase.variant==='128'?'128':'128a') + '). This absorbs the AD into the state without directly exposing it.'
             },
             before: blk.stateBefore,
             after: blk.afterXor
@@ -289,11 +448,11 @@ function buildExecutionSteps(allSteps) {
           for (const rd of blk.rounds) {
             steps.push({
               phase: 'AD Bloque ' + (blk.blockNum + 1) + ' — pb', phaseColor: pc,
-              title: 'Permutacion pb — Ronda ' + (rd.roundNum + 1) + ' / 6',
+              title: 'Permutacion pb — Ronda ' + (rd.roundNum + 1) + ' / ' + (phase.pb||8),
               operation: 'RC XOR x2 -> S-box -> Difusion',
               description: {
-                es: 'pb usa 6 rondas (indices RC 6-11). <strong>RC = 0x' + rd.rc.toString(16).toUpperCase() + '</strong>. La permutacion mezcla el AD absorbido con todo el estado, haciendo que cualquier cambio en el AD afecte al tag final.',
-                en: 'pᵦ uses 6 rounds (RC indices 6–11). <strong>RC = 0x' + rd.rc.toString(16).toUpperCase() + '</strong>. The permutation mixes the absorbed AD with the entire state, ensuring any change in AD affects the final tag.'
+                es: 'pb usa ' + (phase.pb||8) + ' rondas en ASCON-' + (phase.variant==='128'?'128':'128a') + '. <strong>RC = 0x' + rd.rc.toString(16).toUpperCase() + '</strong>. La permutacion mezcla el AD absorbido con todo el estado, haciendo que cualquier cambio en el AD afecte al tag final.',
+                en: 'pᵦ uses ' + (phase.pb||8) + ' rounds in ASCON-' + (phase.variant==='128'?'128':'128a') + '. <strong>RC = 0x' + rd.rc.toString(16).toUpperCase() + '</strong>. The permutation mixes the absorbed AD with the entire state, ensuring any change in AD affects the final tag.'
               },
               before: s,
               after: rd.afterLinear
@@ -312,35 +471,41 @@ function buildExecutionSteps(allSteps) {
       }
 
     } else if (phase.stepType === 'encrypt') {
-      if (!phase.noPlaintext) {
-        for (const blk of phase.blocks) {
+      for (const blk of phase.blocks) {
+        const isPadOnly = blk.isLast && !blk.plaintextHex;
+        steps.push({
+          phase: 'Cifrado Bloque ' + (blk.blockNum + 1), phaseColor: pc,
+          title: isPadOnly
+            ? 'Cifrado — Padding del mensaje (bloque final)'
+            : 'Cifrado — Bloque ' + (blk.blockNum + 1) + ': extraccion CT',
+          operation: isPadOnly
+            ? 'x0 XOR= PAD (separacion de mensaje)'
+            : (phase.variant === '128' ? 'CT = x0 XOR PT' : 'CT = x0||x1 XOR PT'),
+          description: isPadOnly ? {
+            es: 'El mensaje llena un numero exacto de bloques (o esta vacio). Se XOR el byte de padding sobre x0, marcando el final del plaintext sin agregar CT. Este paso es necesario para separar mensajes de distinta longitud.',
+            en: 'The message fills an exact number of blocks (or is empty). Padding byte is XOR-ed onto x0, marking the end of the plaintext without adding CT. This step distinguishes messages of different lengths.'
+          } : {
+            es: '<strong>Plaintext:</strong> <code>' + blk.plaintextHex + '</code><br><strong>Ciphertext:</strong> <code style="color:var(--accent-2)">' + blk.ciphertextHex + '</code><br>CT se obtiene por XOR del rate (' + (phase.variant==='128'?'x0 = 64 bits':'x0||x1 = 128 bits') + ') con el plaintext. El estado se actualiza con el CT para autenticacion.',
+            en: '<strong>Plaintext:</strong> <code>' + blk.plaintextHex + '</code><br><strong>Ciphertext:</strong> <code style="color:var(--accent-2)">' + blk.ciphertextHex + '</code><br>CT is computed by XOR-ing the rate (' + (phase.variant==='128'?'x0 = 64 bits':'x0||x1 = 128 bits') + ') with the plaintext. State is updated with CT for authentication.'
+          },
+          before: blk.stateBefore,
+          after: blk.afterXor,
+          extra: blk.ciphertextHex ? { label: {es:'CT generado',en:'CT generated'}, value: blk.ciphertextHex, color: 'var(--accent-2)' } : undefined
+        });
+        let s = blk.afterXor;
+        for (const rd of blk.rounds) {
           steps.push({
-            phase: 'Cifrado Bloque ' + (blk.blockNum + 1), phaseColor: pc,
-            title: 'Cifrado — Bloque ' + (blk.blockNum + 1) + ': extraccion CT',
-            operation: 'CT = x0 XOR PT',
+            phase: 'Cifrado — pb Bloque ' + (blk.blockNum + 1), phaseColor: pc,
+            title: 'Permutacion pb — Ronda ' + (rd.roundNum + 1) + ' / ' + (phase.pb||8) + ' (Cifrado)',
+            operation: 'RC XOR x2 -> S-box -> Difusion',
             description: {
-              es: '<strong>Plaintext:</strong> <code>' + blk.plaintextHex + '</code><br><strong>Ciphertext:</strong> <code style="color:var(--accent-2)">' + blk.ciphertextHex + '</code><br>El CT se obtiene haciendo XOR del rate (x0) con el plaintext. El estado se actualiza con el CT (x0 = CT), vinculando el ciphertext al estado interno para la autenticacion.',
-              en: '<strong>Plaintext:</strong> <code>' + blk.plaintextHex + '</code><br><strong>Ciphertext:</strong> <code style="color:var(--accent-2)">' + blk.ciphertextHex + '</code><br>CT is computed by XOR-ing the rate (x0) with the plaintext. The state is updated with CT (x0 = CT), binding the ciphertext to the internal state for authentication.'
+              es: 'pb con ' + (phase.pb||8) + ' rondas (ASCON-' + (phase.variant==='128'?'128':'128a') + ') sobre el estado actualizado con el CT. <strong>RC = 0x' + rd.rc.toString(16).toUpperCase() + '</strong>. Efecto avalancha garantizado entre bloques.',
+              en: 'pᵦ with ' + (phase.pb||8) + ' rounds (ASCON-' + (phase.variant==='128'?'128':'128a') + ') on the state updated with CT. <strong>RC = 0x' + rd.rc.toString(16).toUpperCase() + '</strong>. Guaranteed avalanche effect between blocks.'
             },
-            before: blk.stateBefore,
-            after: blk.afterXor,
-            extra: { label: {es:'CT generado',en:'CT generated'}, value: blk.ciphertextHex, color: 'var(--accent-2)' }
+            before: s,
+            after: rd.afterLinear
           });
-          let s = blk.afterXor;
-          for (const rd of blk.rounds) {
-            steps.push({
-              phase: 'Cifrado — pa Bloque ' + (blk.blockNum + 1), phaseColor: pc,
-              title: 'Permutacion pa — Ronda ' + (rd.roundNum + 1) + ' / 12 (Cifrado)',
-              operation: 'RC XOR x2 -> S-box -> Difusion',
-              description: {
-                es: 'pa con 12 rondas sobre el estado actualizado con el CT. <strong>RC = 0x' + rd.rc.toString(16).toUpperCase() + '</strong>. Esto asegura que cada bloque cifrado dependa completamente del estado acumulado — efecto avalancha garantizado.',
-                en: 'pₐ with 12 rounds on the state updated with CT. <strong>RC = 0x' + rd.rc.toString(16).toUpperCase() + '</strong>. This ensures every encrypted block fully depends on the accumulated state — guaranteed avalanche effect.'
-              },
-              before: s,
-              after: rd.afterLinear
-            });
-            s = rd.afterLinear;
-          }
+          s = rd.afterLinear;
         }
       }
 
@@ -348,8 +513,11 @@ function buildExecutionSteps(allSteps) {
       steps.push({
         phase: 'Finalizacion', phaseColor: pc,
         title: 'Finalizacion — XOR clave',
-        operation: 'x1 XOR K_high; x2 XOR K_low',
-        description: {es:'La clave se XOR en <strong>x1</strong> y <strong>x2</strong> para marcar el estado con el secreto antes de generar el tag. Sin la clave, es imposible producir o verificar el tag correcto.',en:'The key is XOR-ed into <strong>x1</strong> and <strong>x2</strong> to stamp the state with the secret before generating the tag. Without the key, it is impossible to produce or verify the correct tag.'},
+        operation: 'x' + (phase.fkr||2) + ' XOR K_high; x' + ((phase.fkr||2)+1) + ' XOR K_low',
+        description: {
+          es:'La clave se XOR en <strong>x' + (phase.fkr||2) + '</strong> y <strong>x' + ((phase.fkr||2)+1) + '</strong> (primer registro de capacidad para el rate de ASCON-' + (phase.variant==='128'?'128':'128a') + ') para marcar el estado con el secreto antes de generar el tag.',
+          en:'The key is XOR-ed into <strong>x' + (phase.fkr||2) + '</strong> and <strong>x' + ((phase.fkr||2)+1) + '</strong> (first capacity register for ASCON-' + (phase.variant==='128'?'128':'128a') + ' rate) to stamp the state with the secret before generating the tag.'
+        },
         before: phase.stateBefore,
         after: phase.afterKeyXor
       });
@@ -412,7 +580,7 @@ function renderCurrentStep() {
 
   const phaseEl = document.getElementById('asconPhaseInfo');
   if (phaseEl) {
-    phaseEl.textContent = step.phase;
+    phaseEl.textContent = pickLang(step.phase);
     phaseEl.style.color = step.phaseColor || 'var(--accent)';
   }
 
@@ -452,13 +620,21 @@ function renderCurrentStep() {
   }
 
   updateNavButtons();
+
+  // Bug 3 fix: despachar evento para que ascon-tabs.js actualice la barra de progreso
+  window.dispatchEvent(new CustomEvent('asconStepUpdate', {
+    detail: { step: currentStep + 1, total: executionSteps.length }
+  }));
 }
 
 function updateNavButtons() {
   const prev = document.getElementById('asconPrevBtn');
   const next = document.getElementById('asconNextBtn');
+  const play = document.getElementById('asconPlayBtn');
   if (prev) prev.disabled = currentStep === 0;
   if (next) next.disabled = currentStep >= executionSteps.length - 1;
+  // Bug 2 fix: habilitar Play cuando hay pasos cargados
+  if (play) play.disabled = executionSteps.length === 0;
 }
 
 // ==================== ESTADO DE LA APP ====================
@@ -468,11 +644,13 @@ let executionSteps = [];
 let currentStep    = 0;
 
 function getInputs() {
+  const variant = document.querySelector('input[name="asconVariant"]:checked')?.value || '128a';
   return {
-    key:   document.getElementById('asconKeyInput')?.value.trim().replace(/\s+/g,'') || '',
-    nonce: document.getElementById('asconNonceInput')?.value.trim().replace(/\s+/g,'') || '',
-    ad:    document.getElementById('asconAdInput')?.value.trim().replace(/\s+/g,'') || '',
-    pt:    document.getElementById('asconPtInput')?.value.trim().replace(/\s+/g,'') || ''
+    key:     document.getElementById('asconKeyInput')?.value.trim().replace(/\s+/g,'') || '',
+    nonce:   document.getElementById('asconNonceInput')?.value.trim().replace(/\s+/g,'') || '',
+    ad:      document.getElementById('asconAdInput')?.value.trim().replace(/\s+/g,'') || '',
+    pt:      document.getElementById('asconPtInput')?.value.trim().replace(/\s+/g,'') || '',
+    variant
   };
 }
 
@@ -490,25 +668,21 @@ function randHex(bytes) {
 
 function runASCON() {
   showError('');
-  const { key, nonce, ad, pt } = getInputs();
+  const { key, nonce, ad, pt, variant } = getInputs();
   if (!key   || key.length   !== 32) { showError('Key: 32 caracteres hex (128 bits)');   return; }
   if (!nonce || nonce.length !== 32) { showError('Nonce: 32 caracteres hex (128 bits)'); return; }
   if (!/^[0-9A-Fa-f]*$/.test(key+nonce+ad+pt)) { showError('Solo caracteres hex (0-9, A-F)'); return; }
 
   try {
-    asconEngine.reset();
-    asconEngine.initialize(key, nonce);
-    asconEngine.processAD(ad);
-    const [ciphertext] = asconEngine.encrypt(pt);
-    const [tag]        = asconEngine.finalize(key);
-
-    executionSteps = buildExecutionSteps(asconEngine.allSteps);
+    window.asconEngine.setVariant(variant);
+    const result = window.asconEngine.run(key, nonce, ad, pt);
+    executionSteps = result.steps;
     currentStep    = 0;
 
     const ctEl = document.getElementById('asconCiphertext');
-    if (ctEl) ctEl.textContent = ciphertext || '(vacio)';
+    if (ctEl) ctEl.textContent = result.ct || '(vacio)';
     const tagEl = document.getElementById('asconTag');
-    if (tagEl) tagEl.textContent = tag;
+    if (tagEl) tagEl.textContent = result.tag;
     const resultEl = document.getElementById('asconResult');
     if (resultEl) resultEl.hidden = false;
 
@@ -538,24 +712,19 @@ function compareRuns() {
   if (k1.length !== 32 || n1.length !== 32 || k2.length !== 32 || n2.length !== 32) {
     out.textContent = 'Key y Nonce deben tener 32 chars hex en ambas ejecuciones.'; return;
   }
+  const variant = document.querySelector('input[name="asconVariant"]:checked')?.value || '128a';
   try {
-    const eng1 = new ASCON128a();
-    eng1.initialize(k1,n1); eng1.processAD('');
-    const [ct1]  = eng1.encrypt(pt1);
-    const [tag1] = eng1.finalize(k1);
-
-    const eng2 = new ASCON128a();
-    eng2.initialize(k2,n2); eng2.processAD('');
-    const [ct2]  = eng2.encrypt(pt2);
-    const [tag2] = eng2.finalize(k2);
+    const r1 = eng.run(variant, k1, n1, '', pt1);
+    const r2 = eng.run(variant, k2, n2, '', pt2);
+    const ct1 = r1.ct, tag1 = r1.tag, ct2 = r2.ct, tag2 = r2.tag;
 
     const tagDiff = [...tag1].filter((c,i) => c !== tag2[i]).length;
     const ctDiff  = (ct1 && ct2 && ct1.length === ct2.length)
       ? [...ct1].filter((c,i) => c !== ct2[i]).length : 'n/a';
     const pct = Math.round(tagDiff / 32 * 100);
 
-    out.textContent =
-'Ejecucion 1\n' +
+    out.innerHTML =
+'<pre>Ejecucion 1\n' +
 '  Key        : ' + k1 + '\n' +
 '  Nonce      : ' + n1 + '\n' +
 '  Ciphertext : ' + (ct1 || '(vacio)') + '\n' +
@@ -568,7 +737,27 @@ function compareRuns() {
 '-----------------------------------------\n' +
 'Diferencia CT  : ' + ctDiff + ' chars hex distintos\n' +
 'Diferencia Tag : ' + tagDiff + ' / 32 chars hex distintos\n' +
-'Efecto avalancha (tag): ~' + pct + '% de diferencia';
+'Efecto avalancha (tag): ~' + pct + '%</pre>';
+
+    // Mostrar gráfico avalancha si hay CT de igual longitud
+    const avWrap = document.getElementById('asconAvalancheWrap');
+    const avPct  = document.getElementById('asconAvalanchePct');
+    if (avWrap && ct1 && ct2 && ct1.length === ct2.length) {
+      const bits = eng.bitsHex(ct1, ct2);
+      avPct.textContent = Math.round(bits.count / bits.total * 100) + '%';
+      avWrap.hidden = false;
+      const canvas = document.getElementById('asconAvalancheCanvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        bits.changed.forEach(i => {
+          const x = Math.floor(i / bits.total * W);
+          ctx.fillStyle = 'var(--accent-ascon)';
+          ctx.fillRect(x, 0, Math.max(1, W / bits.total), H);
+        });
+      }
+    } else if (avWrap) { avWrap.hidden = true; }
   } catch (e) { out.textContent = 'Error: ' + e.message; }
 }
 
@@ -609,8 +798,8 @@ const ASCON_GUIDE = [
   {
     title: { es: 'Estado interno 5x64 bits', en: 'Internal State 5×64 bits' },
     content: {
-      es: 'El estado de ASCON son 5 registros de 64 bits: <strong>x0, x1, x2, x3, x4</strong> = 320 bits totales.<br><br>Inicializacion: x0=IV, x1||x2=Key (128b), x3||x4=Nonce (128b).<br>La IV <code>0x80400c0600000000</code> codifica los parametros del algoritmo.',
-      en: 'The ASCON state consists of 5 64-bit registers: <strong>x0, x1, x2, x3, x4</strong> = 320 bits total.<br><br>Initialization: x0=IV, x1||x2=Key (128b), x3||x4=Nonce (128b).<br>The IV <code>0x80400c0600000000</code> encodes the algorithm parameters.'
+      es: 'El estado de ASCON son 5 registros de 64 bits: <strong>x0, x1, x2, x3, x4</strong> = 320 bits totales.<br><br>Inicializacion: x0=IV, x1||x2=Key (128b), x3||x4=Nonce (128b).<br>La IV <code>0x80800c0800000000</code> codifica los parametros: k=128b, rate=128b, pa=12, pb=8.',
+      en: 'The ASCON state consists of 5 64-bit registers: <strong>x0, x1, x2, x3, x4</strong> = 320 bits total.<br><br>Initialization: x0=IV, x1||x2=Key (128b), x3||x4=Nonce (128b).<br>The IV <code>0x80800c0800000000</code> encodes the parameters: k=128b, rate=128b, pa=12, pb=8.'
     }
   },
   {
@@ -623,22 +812,22 @@ const ASCON_GUIDE = [
   {
     title: { es: 'Capa lineal', en: 'Linear Layer' },
     content: {
-      es: 'Despues de la S-box, cada registro se combina con dos rotaciones de si mismo:<br><br><code>x0 = x0 XOR ROL(x0,19) XOR ROL(x0,28)</code><br><code>x1 = x1 XOR ROL(x1,61) XOR ROL(x1,39)</code>, etc.<br><br>Dispersa los bits modificados por la S-box a traves de cada registro completo (<strong>difusion</strong>).',
-      en: 'After the S-box, each register is combined with two rotations of itself:<br><br><code>x0 = x0 XOR ROL(x0,19) XOR ROL(x0,28)</code><br><code>x1 = x1 XOR ROL(x1,61) XOR ROL(x1,39)</code>, etc.<br><br>Disperses the bits modified by the S-box throughout each complete register (<strong>diffusion</strong>).'
+      es: 'Despues de la S-box, cada registro se combina con dos rotaciones a la derecha de si mismo:<br><br><code>x0 = x0 XOR ROR(x0,19) XOR ROR(x0,28)</code><br><code>x1 = x1 XOR ROR(x1,61) XOR ROR(x1,39)</code>, etc.<br><br>Dispersa los bits modificados por la S-box a traves de cada registro completo (<strong>difusion</strong>).',
+      en: 'After the S-box, each register is combined with two right-rotations of itself:<br><br><code>x0 = x0 XOR ROR(x0,19) XOR ROR(x0,28)</code><br><code>x1 = x1 XOR ROR(x1,61) XOR ROR(x1,39)</code>, etc.<br><br>Disperses the bits modified by the S-box throughout each complete register (<strong>diffusion</strong>).'
     }
   },
   {
     title: { es: 'Permutaciones pa y pb', en: 'Permutations pₐ and pᵦ' },
     content: {
-      es: 'Una <strong>ronda</strong> = RC XOR x2 -> S-box -> Capa lineal.<br><br><strong>pa</strong> = 12 rondas: inicializacion, cifrado (ASCON-128a), finalizacion.<br><strong>pb</strong> = 6 rondas: absorcion de AD.<br><br>Las constantes RC hacen que cada ronda sea unica y evitan simetria.',
-      en: 'One <strong>round</strong> = RC XOR x2 → S-box → Linear layer.<br><br><strong>pₐ</strong> = 12 rounds: initialization, encryption (ASCON-128a), finalization.<br><strong>pᵦ</strong> = 6 rounds: AD absorption.<br><br>Round constants RC make each round unique and prevent symmetry.'
+      es: 'Una <strong>ronda</strong> = RC XOR x2 -> S-box -> Capa lineal.<br><br><strong>pa</strong> = 12 rondas: inicializacion y finalizacion.<br><strong>pb</strong> = 8 rondas (ASCON-128a): absorcion de AD y cifrado entre bloques.<br><br>Las constantes RC hacen que cada ronda sea unica y evitan simetria.',
+      en: 'One <strong>round</strong> = RC XOR x2 → S-box → Linear layer.<br><br><strong>pₐ</strong> = 12 rounds: initialization and finalization.<br><strong>pᵦ</strong> = 8 rounds (ASCON-128a): AD absorption and between-block encryption.<br><br>Round constants RC make each round unique and prevent symmetry.'
     }
   },
   {
     title: { es: 'Datos Asociados (AD)', en: 'Associated Data (AD)' },
     content: {
-      es: 'Datos autenticados pero <strong>no cifrados</strong> (cabeceras, metadatos, IDs).<br><br>Se absorben en el estado (x0 XOR= bloque_AD -> pb), asegurando que el tag tambien los cubre. Al final del AD: domain separation (x4 XOR= 1) para distinguir AD de cifrado.',
-      en: 'Authenticated but <strong>not encrypted</strong> data (headers, metadata, IDs).<br><br>Absorbed into the state (x0 XOR= AD_block → pᵦ), ensuring the tag also covers them. After all AD: domain separation (x4 XOR= 1) to distinguish AD processing from encryption.'
+      es: 'Datos autenticados pero <strong>no cifrados</strong> (cabeceras, metadatos, IDs).<br><br>Se absorben en el estado ((x0||x1) XOR= bloque_AD -> pb), asegurando que el tag tambien los cubre. Al final del AD: domain separation (x4 XOR= 1) para distinguir AD de cifrado.',
+      en: 'Authenticated but <strong>not encrypted</strong> data (headers, metadata, IDs).<br><br>Absorbed into the state ((x0||x1) XOR= AD_block → pᵦ), ensuring the tag also covers them. After all AD: domain separation (x4 XOR= 1) to distinguish AD processing from encryption.'
     }
   },
   {
@@ -666,6 +855,140 @@ function renderGuide() {
     '<div class="prose">' + pickLang(s.content) + '</div>' +
     '</div>'
   ).join('');
+}
+
+// ==================== CONCEPTOS CLAVE ====================
+
+var ASCON_CONCEPTS = [
+  {
+    title: { es: 'AEAD — ¿Qué garantiza exactamente?', en: 'AEAD — What does it actually guarantee?' },
+    content: {
+      es: 'AEAD (Authenticated Encryption with Associated Data) garantiza tres propiedades <strong>en un solo pase</strong>:<br><br><strong>Confidencialidad:</strong> el plaintext queda cifrado y no puede leerse sin la clave.<br><strong>Integridad:</strong> cualquier modificación del ciphertext produce un tag diferente y el receptor lo detecta.<br><strong>Autenticidad:</strong> solo el poseedor de la clave pudo producir el tag correcto.<br><br>A diferencia de cifrar y luego firmar (Encrypt-then-MAC), ASCON hace las tres cosas con el mismo estado interno sin costo adicional.',
+      en: 'AEAD (Authenticated Encryption with Associated Data) guarantees three properties <strong>in a single pass</strong>:<br><br><strong>Confidentiality:</strong> the plaintext is encrypted and cannot be read without the key.<br><strong>Integrity:</strong> any modification to the ciphertext produces a different tag, detected by the receiver.<br><strong>Authenticity:</strong> only the holder of the key could produce the correct tag.<br><br>Unlike Encrypt-then-MAC, ASCON achieves all three using the same internal state at no extra cost.'
+    }
+  },
+  {
+    title: { es: 'Construcción Sponge vs cifrado de bloque', en: 'Sponge construction vs block cipher' },
+    content: {
+      es: 'AES usa una <strong>red de sustitución-permutación</strong> sobre bloques fijos de 128 bits, dependiendo de un modo de operación externo (CBC, GCM, etc.).<br><br>ASCON usa una <strong>construcción Sponge/Dúplex</strong>: un estado interno de 320 bits que <em>absorbe</em> la entrada y luego <em>exprime</em> la salida.<br><br>Ventajas del sponge en IoT: un solo primitivo cubre cifrado, autenticación y hash; el estado compacto cabe en MCUs con 256 bytes de RAM; sin necesidad de S-boxes grandes ni tablas de lookup.',
+      en: 'AES uses a <strong>substitution-permutation network</strong> over fixed 128-bit blocks, relying on an external mode of operation (CBC, GCM, etc.).<br><br>ASCON uses a <strong>Sponge/Duplex construction</strong>: a 320-bit internal state that <em>absorbs</em> input and then <em>squeezes</em> output.<br><br>Sponge advantages for IoT: a single primitive covers encryption, authentication and hashing; the compact state fits in MCUs with 256 bytes of RAM; no large S-boxes or lookup tables needed.'
+    }
+  },
+  {
+    title: { es: 'Rate vs Capacity', en: 'Rate vs Capacity' },
+    content: {
+      es: 'El estado de 320 bits se divide en dos zonas:<br><br><strong>Rate</strong> (x0‖x1 = 128 bits en ASCON-128a): la parte que interactúa con la entrada/salida. Se XOR-ea con el AD y el PT, y de ahí se extrae el CT.<br><br><strong>Capacity</strong> (x2‖x3‖x4 = 192 bits): la parte que <em>nunca se expone directamente</em>. Actúa como "memoria secreta" que hace imposible revertir la permutación sin conocer la clave.<br><br>Cuanto mayor la capacity, mayor la seguridad. ASCON-128a ofrece 128 bits de seguridad.',
+      en: 'The 320-bit state is split into two zones:<br><br><strong>Rate</strong> (x0‖x1 = 128 bits in ASCON-128a): the part that interacts with input/output. It is XORed with AD and PT, and CT is extracted from it.<br><br><strong>Capacity</strong> (x2‖x3‖x4 = 192 bits): the part that is <em>never directly exposed</em>. Acts as "secret memory" that makes it impossible to reverse the permutation without knowing the key.<br><br>The larger the capacity, the higher the security. ASCON-128a provides 128-bit security.'
+    }
+  },
+  {
+    title: { es: 'ASCON-128 vs ASCON-128a', en: 'ASCON-128 vs ASCON-128a' },
+    content: {
+      es: '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:4px 8px">Parámetro</th><th style="padding:4px 8px">ASCON-128</th><th style="padding:4px 8px">ASCON-128a</th></tr><tr><td style="padding:4px 8px">Rate</td><td style="padding:4px 8px;text-align:center">64 bits (8 B)</td><td style="padding:4px 8px;text-align:center">128 bits (16 B)</td></tr><tr><td style="padding:4px 8px">pᵦ (rondas cifrado)</td><td style="padding:4px 8px;text-align:center">6</td><td style="padding:4px 8px;text-align:center">8</td></tr><tr><td style="padding:4px 8px">Throughput</td><td style="padding:4px 8px;text-align:center">Menor</td><td style="padding:4px 8px;text-align:center">Mayor ✓</td></tr><tr><td style="padding:4px 8px">Margen seguridad</td><td style="padding:4px 8px;text-align:center">Mayor ✓</td><td style="padding:4px 8px;text-align:center">Menor</td></tr><tr><td style="padding:4px 8px">IV</td><td style="padding:4px 8px;text-align:center" colspan="1">80400c06…</td><td style="padding:4px 8px;text-align:center">80800c08…</td></tr></table><br>Ambos ofrecen seguridad de 128 bits contra ataques genéricos. ASCON-128a es preferido cuando el throughput importa.',
+      en: '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:4px 8px">Parameter</th><th style="padding:4px 8px">ASCON-128</th><th style="padding:4px 8px">ASCON-128a</th></tr><tr><td style="padding:4px 8px">Rate</td><td style="padding:4px 8px;text-align:center">64 bits (8 B)</td><td style="padding:4px 8px;text-align:center">128 bits (16 B)</td></tr><tr><td style="padding:4px 8px">pᵦ (cipher rounds)</td><td style="padding:4px 8px;text-align:center">6</td><td style="padding:4px 8px;text-align:center">8</td></tr><tr><td style="padding:4px 8px">Throughput</td><td style="padding:4px 8px;text-align:center">Lower</td><td style="padding:4px 8px;text-align:center">Higher ✓</td></tr><tr><td style="padding:4px 8px">Security margin</td><td style="padding:4px 8px;text-align:center">Higher ✓</td><td style="padding:4px 8px;text-align:center">Lower</td></tr><tr><td style="padding:4px 8px">IV</td><td style="padding:4px 8px;text-align:center">80400c06…</td><td style="padding:4px 8px;text-align:center">80800c08…</td></tr></table><br>Both offer 128-bit security against generic attacks. ASCON-128a is preferred when throughput matters.'
+    }
+  },
+  {
+    title: { es: 'Las 4 fases del algoritmo', en: 'The 4 algorithm phases' },
+    content: {
+      es: '<strong>1. Inicialización:</strong> Estado inicial = IV ‖ Key ‖ Nonce. Se aplica pₐ (12 rondas). Luego Key se XOR-ea en los registros finales.<br><br><strong>2. Absorción de AD:</strong> Cada bloque de Datos Asociados se XOR-ea en el rate y se aplica pᵦ. Al final: x4 ^= 1 (separación de dominio).<br><br><strong>3. Cifrado:</strong> Cada bloque de PT se XOR-ea con el rate → produce bloque de CT. Se aplica pᵦ entre bloques.<br><br><strong>4. Finalización:</strong> Key se XOR-ea de nuevo → pₐ (12 rondas) → Tag = (x3 XOR Key_high) ‖ (x4 XOR Key_low).',
+      en: '<strong>1. Initialization:</strong> Initial state = IV ‖ Key ‖ Nonce. pₐ (12 rounds) is applied. Then Key is XORed into the final registers.<br><br><strong>2. AD Absorption:</strong> Each Associated Data block is XORed into the rate and pᵦ is applied. At the end: x4 ^= 1 (domain separation).<br><br><strong>3. Encryption:</strong> Each PT block is XORed with the rate → produces a CT block. pᵦ is applied between blocks.<br><br><strong>4. Finalization:</strong> Key is XORed again → pₐ (12 rounds) → Tag = (x3 XOR Key_high) ‖ (x4 XOR Key_low).'
+    }
+  },
+  {
+    title: { es: 'Padding — cómo se manejan bloques incompletos', en: 'Padding — handling incomplete blocks' },
+    content: {
+      es: 'Si el último bloque de AD o PT no llena el rate completo, ASCON aplica <strong>padding: 1 ‖ 0*</strong>: se añade un bit "1" en la primera posición libre seguido de ceros.<br><br>Ejemplo (rate 128 bits = 16 bytes, PT = 3 bytes = <code>000102</code>):<br>Bloque padded = <code>00 01 02 80 00 00 00 00 00 00 00 00 00 00 00 00</code><br><br>Esto garantiza que PT vacío y PT "00" sean distinguibles, evitando colisiones entre mensajes de diferente longitud.',
+      en: 'If the last AD or PT block does not fill the full rate, ASCON applies <strong>padding: 1 ‖ 0*</strong>: a "1" bit is added at the first free position followed by zeros.<br><br>Example (rate 128 bits = 16 bytes, PT = 3 bytes = <code>000102</code>):<br>Padded block = <code>00 01 02 80 00 00 00 00 00 00 00 00 00 00 00 00</code><br><br>This ensures empty PT and PT "00" are distinguishable, avoiding collisions between messages of different lengths.'
+    }
+  },
+  {
+    title: { es: 'Nonce misuse — ataque práctico', en: 'Nonce misuse — practical attack' },
+    content: {
+      es: 'Si se cifran dos mensajes distintos con la <strong>misma clave y mismo nonce</strong>:<br><br><code>CT1 = PT1 XOR keystream</code><br><code>CT2 = PT2 XOR keystream</code><br><code>CT1 XOR CT2 = PT1 XOR PT2</code><br><br>El atacante obtiene el XOR de los dos plaintexts. Con crib-dragging (conociendo palabras comunes como "HTTP", "GET") puede recuperar ambos textos completos. Solución: <strong>nonce único por mensaje</strong> — contador de 128 bits, UUID, o timestamp de alta resolución.',
+      en: 'If two different messages are encrypted with the <strong>same key and same nonce</strong>:<br><br><code>CT1 = PT1 XOR keystream</code><br><code>CT2 = PT2 XOR keystream</code><br><code>CT1 XOR CT2 = PT1 XOR PT2</code><br><br>The attacker obtains the XOR of both plaintexts. With crib-dragging (knowing common words like "HTTP", "GET") they can recover both full texts. Solution: <strong>unique nonce per message</strong> — 128-bit counter, UUID, or high-resolution timestamp.'
+    }
+  },
+  {
+    title: { es: 'ASCON en la práctica (SOC/DFIR)', en: 'ASCON in practice (SOC/DFIR)' },
+    content: {
+      es: '¿Dónde encontrar ASCON en la naturaleza?<br><br><strong>Protocolos IoT:</strong> Matter (smart home), Thread, OSCORE (CoAP sobre 6LoWPAN), TinyCrypt.<br><strong>Firmwares embedded:</strong> Cortex-M, AVR, RISC-V con librerías ASCON-C.<br><strong>Chips:</strong> STM32, ESP32-C3, nRF52.<br><br><strong>Firma en binarios (DFIR):</strong> la IV <code>0x80800c0800000000</code> (128a) o <code>0x80400c0600000000</code> (128) aparece en el estado inicial. Buscar con <code>grep -c "\\x80\\x80\\x0c\\x08"</code> o en hex dump para identificar el algoritmo.',
+      en: 'Where to find ASCON in the wild?<br><br><strong>IoT protocols:</strong> Matter (smart home), Thread, OSCORE (CoAP over 6LoWPAN), TinyCrypt.<br><strong>Embedded firmware:</strong> Cortex-M, AVR, RISC-V with ASCON-C libraries.<br><strong>Chips:</strong> STM32, ESP32-C3, nRF52.<br><br><strong>Binary signature (DFIR):</strong> the IV <code>0x80800c0800000000</code> (128a) or <code>0x80400c0600000000</code> (128) appears in the initial state. Search with <code>grep -c "\\x80\\x80\\x0c\\x08"</code> or in hex dump to identify the algorithm.'
+    }
+  }
+];
+
+function renderConcepts() {
+  var el = document.getElementById('asconConceptsContent');
+  if (!el) return;
+  var t = document.getElementById('asconConceptsTitle');
+  if (t) t.textContent = getLang() === 'en' ? 'Key Concepts' : 'Conceptos clave';
+  el.innerHTML = ASCON_CONCEPTS.map(function(s, i) {
+    return '<div class="guide-card">' +
+      '<h3>' + (i + 1) + '. ' + pickLang(s.title) + '</h3>' +
+      '<div class="prose">' + pickLang(s.content) + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// ==================== OPERACIONES INTERNAS ====================
+
+var ASCON_OPS = [
+  {
+    title: { es: 'Una ronda completa', en: 'A complete round' },
+    content: {
+      es: 'Cada ronda de ASCON tiene exactamente 3 pasos en este orden:<br><br><strong>1. Constante de ronda (RC):</strong> x2 ^= RC_i<br><strong>2. S-box de 5 bits (capa de sustitución):</strong> opera en columnas verticales, introduce no-linealidad.<br><strong>3. Capa lineal (difusión):</strong> cada registro xi se XOR-ea con dos rotaciones de sí mismo.<br><br>En pₐ esto se repite 12 veces (RC = 0xf0 → 0x4b). En pᵦ se repiten las últimas 8 (128a) o 6 (128) rondas.',
+      en: 'Each ASCON round has exactly 3 steps in this order:<br><br><strong>1. Round constant (RC):</strong> x2 ^= RC_i<br><strong>2. 5-bit S-box (substitution layer):</strong> operates on vertical columns, introduces nonlinearity.<br><strong>3. Linear layer (diffusion):</strong> each register xi is XORed with two rotations of itself.<br><br>In pₐ this repeats 12 times (RC = 0xf0 → 0x4b). In pᵦ the last 8 (128a) or 6 (128) rounds are used.'
+    }
+  },
+  {
+    title: { es: 'S-box de 5 bits — pseudocódigo', en: '5-bit S-box — pseudocode' },
+    content: {
+      es: 'Opera sobre 64 columnas de 5 bits en paralelo (1 bit de cada registro x0–x4):<br><br><code>x0 ^= x4; x4 ^= x3; x2 ^= x1;<br>t0=x0; t1=x1; t2=x2; t3=x3; t4=x4;<br>x0 = t0 ^ (~t1 &amp; t2);<br>x1 = t1 ^ (~t2 &amp; t3);<br>x2 = t2 ^ (~t3 &amp; t4);<br>x3 = t3 ^ (~t4 &amp; t0);<br>x4 = t4 ^ (~t0 &amp; t1);<br>x1 ^= x0; x3 ^= x2; x0 ^= x4; x2 = ~x2;</code><br><br>Solo AND, NOT y XOR — sin tablas de lookup, resistente a timing attacks en software.',
+      en: 'Operates on 64 5-bit columns in parallel (1 bit from each register x0–x4):<br><br><code>x0 ^= x4; x4 ^= x3; x2 ^= x1;<br>t0=x0; t1=x1; t2=x2; t3=x3; t4=x4;<br>x0 = t0 ^ (~t1 &amp; t2);<br>x1 = t1 ^ (~t2 &amp; t3);<br>x2 = t2 ^ (~t3 &amp; t4);<br>x3 = t3 ^ (~t4 &amp; t0);<br>x4 = t4 ^ (~t0 &amp; t1);<br>x1 ^= x0; x3 ^= x2; x0 ^= x4; x2 = ~x2;</code><br><br>Only AND, NOT and XOR — no lookup tables, resistant to timing attacks in software.'
+    }
+  },
+  {
+    title: { es: 'Capa lineal — rotaciones por registro', en: 'Linear layer — rotations per register' },
+    content: {
+      es: '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:4px 8px">Reg.</th><th style="padding:4px 8px">Fórmula</th><th style="padding:4px 8px">Rotaciones</th></tr><tr><td style="padding:4px 8px">x0</td><td style="padding:4px 8px">x0 ^= ROR(x0,19) ^ ROR(x0,28)</td><td style="padding:4px 8px;text-align:center">19, 28</td></tr><tr><td style="padding:4px 8px">x1</td><td style="padding:4px 8px">x1 ^= ROR(x1,61) ^ ROR(x1,39)</td><td style="padding:4px 8px;text-align:center">61, 39</td></tr><tr><td style="padding:4px 8px">x2</td><td style="padding:4px 8px">x2 ^= ROR(x2,1) ^ ROR(x2,6)</td><td style="padding:4px 8px;text-align:center">1, 6</td></tr><tr><td style="padding:4px 8px">x3</td><td style="padding:4px 8px">x3 ^= ROR(x3,10) ^ ROR(x3,17)</td><td style="padding:4px 8px;text-align:center">10, 17</td></tr><tr><td style="padding:4px 8px">x4</td><td style="padding:4px 8px">x4 ^= ROR(x4,7) ^ ROR(x4,41)</td><td style="padding:4px 8px;text-align:center">7, 41</td></tr></table><br>Las constantes se eligieron para maximizar la difusión de bits en el menor número de rondas.',
+      en: '<table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:4px 8px">Reg.</th><th style="padding:4px 8px">Formula</th><th style="padding:4px 8px">Rotations</th></tr><tr><td style="padding:4px 8px">x0</td><td style="padding:4px 8px">x0 ^= ROR(x0,19) ^ ROR(x0,28)</td><td style="padding:4px 8px;text-align:center">19, 28</td></tr><tr><td style="padding:4px 8px">x1</td><td style="padding:4px 8px">x1 ^= ROR(x1,61) ^ ROR(x1,39)</td><td style="padding:4px 8px;text-align:center">61, 39</td></tr><tr><td style="padding:4px 8px">x2</td><td style="padding:4px 8px">x2 ^= ROR(x2,1) ^ ROR(x2,6)</td><td style="padding:4px 8px;text-align:center">1, 6</td></tr><tr><td style="padding:4px 8px">x3</td><td style="padding:4px 8px">x3 ^= ROR(x3,10) ^ ROR(x3,17)</td><td style="padding:4px 8px;text-align:center">10, 17</td></tr><tr><td style="padding:4px 8px">x4</td><td style="padding:4px 8px">x4 ^= ROR(x4,7) ^ ROR(x4,41)</td><td style="padding:4px 8px;text-align:center">7, 41</td></tr></table><br>The constants were chosen to maximize bit diffusion in the fewest number of rounds.'
+    }
+  },
+  {
+    title: { es: 'Constantes de ronda RC', en: 'Round constants RC' },
+    content: {
+      es: 'Las 12 constantes hacen que cada ronda sea única (evitan slide attacks y simetría):<br><br><table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="padding:4px 8px">Ronda (pₐ)</th><th style="padding:4px 8px">RC (hex)</th><th style="padding:4px 8px">Ronda (pₐ)</th><th style="padding:4px 8px">RC (hex)</th></tr><tr><td style="padding:4px 8px;text-align:center">0</td><td style="padding:4px 8px;text-align:center">0xf0</td><td style="padding:4px 8px;text-align:center">6</td><td style="padding:4px 8px;text-align:center">0x96</td></tr><tr><td style="padding:4px 8px;text-align:center">1</td><td style="padding:4px 8px;text-align:center">0xe1</td><td style="padding:4px 8px;text-align:center">7</td><td style="padding:4px 8px;text-align:center">0x87</td></tr><tr><td style="padding:4px 8px;text-align:center">2</td><td style="padding:4px 8px;text-align:center">0xd2</td><td style="padding:4px 8px;text-align:center">8</td><td style="padding:4px 8px;text-align:center">0x78</td></tr><tr><td style="padding:4px 8px;text-align:center">3</td><td style="padding:4px 8px;text-align:center">0xc3</td><td style="padding:4px 8px;text-align:center">9</td><td style="padding:4px 8px;text-align:center">0x69</td></tr><tr><td style="padding:4px 8px;text-align:center">4</td><td style="padding:4px 8px;text-align:center">0xb4</td><td style="padding:4px 8px;text-align:center">10</td><td style="padding:4px 8px;text-align:center">0x5a</td></tr><tr><td style="padding:4px 8px;text-align:center">5</td><td style="padding:4px 8px;text-align:center">0xa5</td><td style="padding:4px 8px;text-align:center">11</td><td style="padding:4px 8px;text-align:center">0x4b</td></tr></table><br>pᵦ=8 (128a) usa rondas 4–11; pᵦ=6 (128) usa rondas 6–11.',
+      en: 'The 12 constants make each round unique (preventing slide attacks and symmetry):<br><br><table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.82rem"><tr style="border-bottom:1px solid var(--line)"><th style="padding:4px 8px">Round (pₐ)</th><th style="padding:4px 8px">RC (hex)</th><th style="padding:4px 8px">Round (pₐ)</th><th style="padding:4px 8px">RC (hex)</th></tr><tr><td style="padding:4px 8px;text-align:center">0</td><td style="padding:4px 8px;text-align:center">0xf0</td><td style="padding:4px 8px;text-align:center">6</td><td style="padding:4px 8px;text-align:center">0x96</td></tr><tr><td style="padding:4px 8px;text-align:center">1</td><td style="padding:4px 8px;text-align:center">0xe1</td><td style="padding:4px 8px;text-align:center">7</td><td style="padding:4px 8px;text-align:center">0x87</td></tr><tr><td style="padding:4px 8px;text-align:center">2</td><td style="padding:4px 8px;text-align:center">0xd2</td><td style="padding:4px 8px;text-align:center">8</td><td style="padding:4px 8px;text-align:center">0x78</td></tr><tr><td style="padding:4px 8px;text-align:center">3</td><td style="padding:4px 8px;text-align:center">0xc3</td><td style="padding:4px 8px;text-align:center">9</td><td style="padding:4px 8px;text-align:center">0x69</td></tr><tr><td style="padding:4px 8px;text-align:center">4</td><td style="padding:4px 8px;text-align:center">0xb4</td><td style="padding:4px 8px;text-align:center">10</td><td style="padding:4px 8px;text-align:center">0x5a</td></tr><tr><td style="padding:4px 8px;text-align:center">5</td><td style="padding:4px 8px;text-align:center">0xa5</td><td style="padding:4px 8px;text-align:center">11</td><td style="padding:4px 8px;text-align:center">0x4b</td></tr></table><br>pᵦ=8 (128a) uses rounds 4–11; pᵦ=6 (128) uses rounds 6–11.'
+    }
+  },
+  {
+    title: { es: 'Separación de dominio (x4 ^= 1)', en: 'Domain separation (x4 ^= 1)' },
+    content: {
+      es: 'Después de absorber el <strong>último bloque de AD</strong> (y antes de empezar el cifrado), ASCON hace:<br><br><code>x4 ^= 1</code><br><br>¿Por qué? Sin esta operación, el estado después de AD vacío (sin datos asociados) sería idéntico al estado inicial del cifrado. Esto permitiría confundir "AD vacío + PT = X" con "AD = X + PT vacío", atacando la integridad.<br><br>Esta separación también se aplica si el AD es vacío: el flip ocurre igualmente, asegurando que la presencia/ausencia de AD siempre afecte el estado.',
+      en: 'After absorbing the <strong>last AD block</strong> (and before starting encryption), ASCON does:<br><br><code>x4 ^= 1</code><br><br>Why? Without this, the state after empty AD (no associated data) would be identical to the initial encryption state. This would allow confusing "empty AD + PT = X" with "AD = X + empty PT", attacking integrity.<br><br>This separation also applies when AD is empty: the flip occurs anyway, ensuring the presence/absence of AD always affects the state.'
+    }
+  },
+  {
+    title: { es: 'Finalización y generación del tag', en: 'Finalization and tag generation' },
+    content: {
+      es: 'La fase de finalización tiene 3 pasos:<br><br><strong>1. Key XOR:</strong> Se XOR-ea la clave en los registros intermedios del estado (x1‖x2 en ASCON-128a, x1‖x2 en ASCON-128).<br><br><strong>2. Permutación pₐ:</strong> Se aplican las 12 rondas completas. Esta operación mezcla la clave con todo el estado de forma irreversible sin la clave.<br><br><strong>3. Tag:</strong><br><code>Tag_high = x3 XOR Key_high</code><br><code>Tag_low  = x4 XOR Key_low</code><br><code>Tag = Tag_high ‖ Tag_low = 128 bits</code><br><br>El último XOR de la clave asegura que el tag depende directamente de ella.',
+      en: 'The finalization phase has 3 steps:<br><br><strong>1. Key XOR:</strong> The key is XORed into the middle state registers (x1‖x2 in ASCON-128a, x1‖x2 in ASCON-128).<br><br><strong>2. Permutation pₐ:</strong> All 12 rounds are applied. This irreversibly mixes the key with the entire state without the key.<br><br><strong>3. Tag:</strong><br><code>Tag_high = x3 XOR Key_high</code><br><code>Tag_low  = x4 XOR Key_low</code><br><code>Tag = Tag_high ‖ Tag_low = 128 bits</code><br><br>The final key XOR ensures the tag directly depends on it.'
+    }
+  }
+];
+
+function renderOps() {
+  var el = document.getElementById('asconOpsContent');
+  if (!el) return;
+  var t = document.getElementById('asconOpsTitle');
+  if (t) t.textContent = getLang() === 'en' ? 'Internal Operations' : 'Operaciones internas';
+  el.innerHTML = ASCON_OPS.map(function(s, i) {
+    return '<div class="guide-card">' +
+      '<h3>' + (i + 1) + '. ' + pickLang(s.title) + '</h3>' +
+      '<div class="prose">' + pickLang(s.content) + '</div>' +
+      '</div>';
+  }).join('');
 }
 
 // ==================== INICIALIZACION ====================
@@ -741,6 +1064,8 @@ function applyLanguage() {
 
   /* Re-render guide and current step */
   renderGuide();
+  renderConcepts();
+  renderOps();
   if (executionSteps.length) renderCurrentStep();
 }
 
@@ -749,10 +1074,17 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('asconStartBtn')?.addEventListener('click', runASCON);
 
   document.getElementById('asconResetBtn')?.addEventListener('click', function() {
-    asconEngine.reset(); executionSteps = []; currentStep = 0;
+    executionSteps = []; currentStep = 0;
     var r = document.getElementById('asconResult');    if (r) r.hidden = true;
     var v = document.getElementById('asconVizSection'); if (v) v.hidden = true;
     var ph = document.getElementById('asconPlaceholder'); if (ph) ph.hidden = false;
+    var pw = document.getElementById('asconProgressWrap'); if (pw) pw.hidden = true;
+    // Bug 5 fix: resetear counter y deshabilitar botones de navegación
+    var sc = document.getElementById('asconStepCounter');
+    if (sc) sc.textContent = 'Paso — / —';
+    var pi = document.getElementById('asconPhaseInfo');
+    if (pi) pi.textContent = '—';
+    updateNavButtons();
     showError('');
   });
 
@@ -794,6 +1126,8 @@ document.addEventListener('DOMContentLoaded', function() {
   s2('asconCmpNonce2', '000102030405060708090A0B0C0D0E01');
 
   renderGuide();
+  renderConcepts();
+  renderOps();
 
   // Bilingual: apply on load + listen for changes
   applyLanguage();

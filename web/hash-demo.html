@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Hash Lab — Hashing e Integridad</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="theme-switcher.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous" />
   <script defer src="hash-app.js"></script>
   <script defer src="hash-tabs.js"></script>
@@ -111,7 +112,19 @@
         calcula, visualiza cada paso y comprende su rol en SOC y DFIR.
       </p>
     </div>
-    <div class="hero-tools"></div>
+    <div class="hero-tools">
+      <label class="lang-switch">
+        <span id="langLabel">Idioma</span>
+        <select id="langSelect">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <label style="display:grid;gap:6px;">
+        <span class="ascon-mlabel">Tema</span>
+        <select data-theme-select class="theme-select" style="min-width:190px;"></select>
+      </label>
+    </div>
   </header>
 
   <main class="layout">
