@@ -4,6 +4,12 @@
 &nbsp;
 🌐 **Live:** https://xavimape.github.io/criptografia-simetrica/ &nbsp;|&nbsp; Spanish version: [README.md](README.md)
 
+## Motivation
+
+Understanding cryptography in a SOC is not just knowing that "AES encrypts data." It's knowing why a repeated IV breaks GCM, how to identify ChaCha20 in WireGuard traffic, or what it means to see SHA-256 in a ransomware IOC. This project came from wanting to understand algorithms from the inside — the math, the internal states, the transformations — to have real technical grounding when working in defensive contexts.
+
+---
+
 ## What is this project?
 
 A **cryptographic internals** lab focused on technical rigor and step-by-step algorithm visualization. The goal is to understand how AES, ASCON, ChaCha20-Poly1305, SHA-256 and related algorithms work from the inside: the mathematics, internal states, and transformations — step by step.
@@ -30,6 +36,19 @@ The two projects are complementary: understanding the internals here gives you t
 **Theory** — navigable slides (8-9 per module) explaining the mathematical construction: why GF(2⁸) in AES, why ARX in ChaCha20, why the Keccak sponge is resistant to length-extension attacks.
 
 **Resources** — primary technical references: FIPS, RFCs, original papers, NIST test vectors, verification tools.
+
+---
+
+## Screenshots
+
+![Main hub — module navigation](docs/screenshots/hub-navegacion.jpg)
+*Navigation hub: 4 modules, ES/EN language selector and 3 visual themes.*
+
+![AES Theory — State Matrix slide](docs/screenshots/aes-teoria-slide.jpg)
+*Theory slides: step-by-step explanation with code, state matrix visualization and technical key-points.*
+
+![ASCON Demo Lab — step-by-step visualization](docs/screenshots/ascon-demo-lab.jpg)
+*ASCON-128a interactive lab: 320-bit internal state, transformations with changed-bit count and per-step explanation.*
 
 ---
 
