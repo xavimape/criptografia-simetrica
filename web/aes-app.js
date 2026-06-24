@@ -740,13 +740,6 @@ function initDefaults() {
 }
 
 function wireEvents() {
-  $("langSelect").addEventListener("change", (e) => {
-    state.lang = e.target.value;
-    try { localStorage.setItem('site-lang', state.lang); } catch(x) {}
-    applyLanguage();
-    window.dispatchEvent(new CustomEvent('langchange', { detail: { lang: state.lang } }));
-  });
-
   $("speed").addEventListener("input", updateSpeedLabel);
   $("randomKeyBtn").addEventListener("click", () => {
     const size = Number($("keySize").value) / 8;
