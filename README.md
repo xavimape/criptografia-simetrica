@@ -29,7 +29,7 @@ Cada módulo incluye tres componentes:
 
 **Demo Lab** — laboratorio interactivo donde cada transformación es visible en tiempo real: estado interno, valores intermedios, pasos del algoritmo con cálculos detallados.
 
-**Teoría** — 8 diapositivas navegables que explican la construcción matemática: por qué GF(2⁸) en AES, por qué ARX en ChaCha20, por qué la esponja Keccak es resistente a length-extension.
+**Teoría** — diapositivas navegables (8-9 por módulo) que explican la construcción matemática: por qué GF(2⁸) en AES, por qué ARX en ChaCha20, por qué la esponja Keccak es resistente a length-extension.
 
 **Recursos** — referencias técnicas primarias: FIPS, RFCs, papers originales, vectores NIST, herramientas de verificación.
 
@@ -56,7 +56,10 @@ Para escenarios SOC completos con análisis de tráfico TLS, casos de ransomware
 web/
 ├── index.html              ← Hub principal con navegación
 ├── styles.css              ← Tema visual unificado (dark cyber)
+├── theme-switcher.js       ← Selector de temas y persistencia (localStorage)
 ├── i18n.js                 ← Motor bilingüe ES/EN compartido
+├── boton-dubstep.css       ← Componente CSS: botón animado de navegación
+├── favicon.svg             ← Icono del sitio
 │
 ├── aes-demo.html           ← Lab interactivo AES-256-GCM
 ├── aes-teoria.html         ← 8 diapositivas teóricas AES
@@ -64,21 +67,22 @@ web/
 ├── aes-app.js              ← Implementación AES + visualización
 ├── aes-tabs.js             ← Lógica de tabs AES
 ├── aes-enhancements.js     ← Mejoras visuales AES
+├── aes-translations.json   ← Cadenas de traducción específicas AES
 │
-├── ascon-demo.html         ← Lab interactivo ASCON-128
+├── ascon-demo.html         ← Lab interactivo ASCON-128 / ASCON-128a
 ├── ascon-teoria.html       ← 8 diapositivas teóricas ASCON
 ├── ascon-recursos.html     ← Referencias y recursos ASCON
 ├── ascon-app.js            ← Implementación ASCON + visualización
-├── ascon-tabs.js           ← Lógica de tabs ASCON
+├── ascon-tabs.js           ← Lógica de tabs y KAT examples ASCON
 │
 ├── chacha20-demo.html      ← Lab interactivo ChaCha20-Poly1305
-├── chacha20-teoria.html    ← 8 diapositivas teóricas ChaCha20
+├── chacha20-teoria.html    ← 9 diapositivas teóricas ChaCha20
 ├── chacha20-recursos.html  ← Referencias y recursos ChaCha20
 ├── chacha20-app.js         ← Implementación ChaCha20 + visualización
 ├── chacha20-tabs.js        ← Lógica de tabs ChaCha20
 │
-├── hash-demo.html          ← Lab interactivo Hashing (MD5/SHA/HMAC)
-├── hash-teoria.html        ← 8 diapositivas teóricas Hashing
+├── hash-demo.html          ← Lab interactivo Hashing (MD5/SHA-2/SHA-3/HMAC)
+├── hash-teoria.html        ← 9 diapositivas teóricas Hashing
 ├── hash-recursos.html      ← Referencias y recursos Hashing
 ├── hash-app.js             ← Implementación hash + visualización
 └── hash-tabs.js            ← Lógica de tabs Hashing
@@ -96,7 +100,9 @@ web/
 | Hosting        | GitHub Pages / servidores estáticos |
 | Compatibilidad | Navegadores modernos (ES6+)         |
 | i18n           | Motor propio en `i18n.js`           |
+| Temas          | `theme-switcher.js` — claro / oscuro / high-contrast, persistido en `localStorage` |
 | Fórmulas       | [KaTeX](https://katex.org/) via cdnjs — `\(...\)` inline, `$$...$$` display |
+| Navegación     | `boton-dubstep.css` — botón animado con efecto pulse adaptado por módulo |
 
 ---
 

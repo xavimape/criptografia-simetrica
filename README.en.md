@@ -27,7 +27,7 @@ The two projects are complementary: understanding the internals here gives you t
 
 **Demo Lab** — interactive lab where every transformation is visible in real time: internal state, intermediate values, algorithm steps with detailed calculations.
 
-**Theory** — 8 navigable slides explaining the mathematical construction: why GF(2⁸) in AES, why ARX in ChaCha20, why the Keccak sponge is resistant to length-extension attacks.
+**Theory** — navigable slides (8-9 per module) explaining the mathematical construction: why GF(2⁸) in AES, why ARX in ChaCha20, why the Keccak sponge is resistant to length-extension attacks.
 
 **Resources** — primary technical references: FIPS, RFCs, original papers, NIST test vectors, verification tools.
 
@@ -54,7 +54,10 @@ For complete SOC scenarios with TLS traffic analysis, ransomware cases, JA3/Zeek
 web/
 ├── index.html              ← Main hub with navigation
 ├── styles.css              ← Unified visual theme (dark cyber)
+├── theme-switcher.js       ← Theme selector and persistence (localStorage)
 ├── i18n.js                 ← Shared ES/EN bilingual engine
+├── boton-dubstep.css       ← CSS component: animated navigation button
+├── favicon.svg             ← Site icon
 │
 ├── aes-demo.html           ← AES-256-GCM interactive lab
 ├── aes-teoria.html         ← 8 AES theory slides
@@ -62,21 +65,22 @@ web/
 ├── aes-app.js              ← AES implementation + visualization
 ├── aes-tabs.js             ← AES tab logic
 ├── aes-enhancements.js     ← AES visual enhancements
+├── aes-translations.json   ← AES-specific translation strings
 │
-├── ascon-demo.html         ← ASCON-128 interactive lab
+├── ascon-demo.html         ← ASCON-128 / ASCON-128a interactive lab
 ├── ascon-teoria.html       ← 8 ASCON theory slides
 ├── ascon-recursos.html     ← ASCON references and resources
 ├── ascon-app.js            ← ASCON implementation + visualization
-├── ascon-tabs.js           ← ASCON tab logic
+├── ascon-tabs.js           ← ASCON tab logic and KAT examples
 │
 ├── chacha20-demo.html      ← ChaCha20-Poly1305 interactive lab
-├── chacha20-teoria.html    ← 8 ChaCha20 theory slides
+├── chacha20-teoria.html    ← 9 ChaCha20 theory slides
 ├── chacha20-recursos.html  ← ChaCha20 references and resources
 ├── chacha20-app.js         ← ChaCha20 implementation + visualization
 ├── chacha20-tabs.js        ← ChaCha20 tab logic
 │
-├── hash-demo.html          ← Hashing interactive lab (MD5/SHA/HMAC)
-├── hash-teoria.html        ← 8 Hashing theory slides
+├── hash-demo.html          ← Hashing interactive lab (MD5/SHA-2/SHA-3/HMAC)
+├── hash-teoria.html        ← 9 Hashing theory slides
 ├── hash-recursos.html      ← Hashing references and resources
 ├── hash-app.js             ← Hash implementation + visualization
 └── hash-tabs.js            ← Hashing tab logic
@@ -94,7 +98,9 @@ web/
 | Hosting        | GitHub Pages / static servers       |
 | Compatibility  | Modern browsers (ES6+)              |
 | i18n           | Custom engine in `i18n.js`          |
+| Themes         | `theme-switcher.js` — light / dark / high-contrast, persisted in `localStorage` |
 | Formulas       | [KaTeX](https://katex.org/) via cdnjs — `\(...\)` inline, `$$...$$` display |
+| Navigation     | `boton-dubstep.css` — animated pulse button, color-adapted per module |
 
 ---
 

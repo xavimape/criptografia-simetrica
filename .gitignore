@@ -42,7 +42,8 @@ secrets.txt
 node_modules/
 package-lock.json
 
-# Archivos que solo usa la IA localmente
+# Archivos de desarrollo local / no distribuibles
 *.pkl
 PROJECT_KNOWLEDGE.md
 AUDITORIA_Y_PLAN.md
+.claude/
