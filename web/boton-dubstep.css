@@ -1,0 +1,159 @@
+/* ============================================
+   BOTÓN DUBSTEP — aplicado a .section-back
+   Integra con el cambiador de temas via
+   var(--accent) / var(--accent-ascon) / etc.
+   El CSS original (.dubstep-wrapper / .dubstep-btn)
+   se mantiene abajo por compatibilidad.
+   ============================================ */
+
+/* ── Conversión del link en botón ── */
+.section-back {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             0.4rem;
+  padding:         0.45rem 1.2rem;
+  border-radius:   50px;
+  border:          2px solid rgba(255, 255, 255, 0.18);
+  background:      var(--dubstep-color, var(--accent));
+  color:           #0a0a0f;          /* oscuro — legible sobre accents brillantes */
+  font-family:     var(--mono);
+  font-size:       0.72rem;
+  font-weight:     700;
+  letter-spacing:  0.12em;
+  text-transform:  uppercase;
+  text-decoration: none;
+  cursor:          pointer;
+  position:        relative;        /* necesario para los pseudo-elementos */
+  overflow:        visible;         /* permite que los anillos salgan del borde */
+  transition:      filter 0.2s ease, transform 0.15s ease;
+  margin-bottom:   1.4rem;
+  z-index:         0;
+}
+
+/* Hover: brillo + ligero lift */
+.section-back:hover {
+  color:  #0a0a0f;
+  filter: brightness(1.18);
+  transform: translateY(-2px);
+}
+
+/* ── Anillos pulsantes (detrás del botón) ── */
+.section-back::before,
+.section-back::after {
+  content:        '';
+  position:       absolute;
+  inset:          0;
+  border-radius:  50px;
+  background:     var(--dubstep-color, var(--accent));
+  opacity:        0;
+  z-index:        -1;
+  pointer-events: none;
+  animation:      ds-ring1 2.5s ease-out infinite;
+}
+
+.section-back::after {
+  animation:       ds-ring2 2.5s ease-out infinite;
+  animation-delay: 0.9s;
+}
+
+/* Hover: anillos se aceleran */
+.section-back:hover::before { animation-duration: 0.55s; }
+.section-back:hover::after  { animation-duration: 0.55s; }
+
+/* ── Color por módulo (detectado por clase del shell) ── */
+.slides-shell--ascon  .section-back { --dubstep-color: var(--accent-ascon);  }
+.slides-shell--chacha .section-back { --dubstep-color: var(--accent-chacha); }
+.slides-shell--hash   .section-back { --dubstep-color: var(--accent-hash);   }
+
+/* ── Adaptación tema claro (accents más oscuros) ── */
+[data-theme="light"] .section-back {
+  color:        #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* ── Animaciones ── */
+@keyframes ds-ring1 {
+  0%   { opacity: 0.65; transform: scale(1);                  }
+  65%  { opacity: 0;    transform: scaleY(1.85) scaleX(1.45); }
+  66%  { opacity: 0;    transform: scale(1);                  }
+  100% { opacity: 0;    transform: scale(1);                  }
+}
+
+@keyframes ds-ring2 {
+  0%   { opacity: 0.5;  transform: scale(1);                  }
+  65%  { opacity: 0;    transform: scaleY(1.35) scaleX(1.18); }
+  66%  { opacity: 0;    transform: scale(1);                  }
+  100% { opacity: 0;    transform: scale(1);                  }
+}
+
+
+/* ============================================================
+   CLASES ORIGINALES — disponibles si se usa el markup manual:
+   <div class="dubstep-wrapper">
+     <div class="dubstep-pulsing"></div>
+     <button class="dubstep-btn">Inicio</button>
+   </div>
+   ============================================================ */
+
+.dubstep-wrapper {
+  display:         inline-flex;
+  position:        relative;
+  justify-content: center;
+  align-items:     center;
+}
+
+.dubstep-pulsing {
+  position:      absolute;
+  inset:         0;
+  border-radius: 50px;
+  z-index:       0;
+  pointer-events: none;
+}
+
+.dubstep-pulsing::before,
+.dubstep-pulsing::after {
+  content:       "";
+  position:      absolute;
+  inset:         0;
+  border-radius: 50px;
+  background:    var(--dubstep-color, var(--accent));
+  opacity:       0;
+  z-index:       0;
+  animation:     ds-ring1 2.5s ease-out infinite;
+}
+
+.dubstep-pulsing::after {
+  animation:       ds-ring2 2.5s ease-out infinite;
+  animation-delay: 0.9s;
+}
+
+.dubstep-wrapper:hover .dubstep-pulsing::before { animation-duration: 0.55s; }
+.dubstep-wrapper:hover .dubstep-pulsing::after  { animation-duration: 0.55s; }
+
+.dubstep-btn {
+  background:      var(--dubstep-color, var(--accent));
+  color:           #0a0a0f;
+  border:          2px solid rgba(255, 255, 255, 0.18);
+  border-radius:   50px;
+  padding:         0.45rem 1.2rem;
+  font-family:     var(--mono, system-ui, sans-serif);
+  font-size:       0.72rem;
+  font-weight:     700;
+  letter-spacing:  0.12em;
+  text-transform:  uppercase;
+  text-decoration: none;
+  cursor:          pointer;
+  position:        relative;
+  z-index:         2;
+  transition:      filter 0.2s ease, transform 0.15s ease;
+}
+
+.dubstep-wrapper:hover .dubstep-btn {
+  filter:    brightness(1.18);
+  transform: translateY(-2px);
+}
+
+[data-theme="light"] .dubstep-btn {
+  color:        #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+}

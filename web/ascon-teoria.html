@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teoría — ASCON-128a Visualizer</title>
+  <title>Teoría — ASCON-128a</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous" />
+  <link rel="stylesheet" href="boton-dubstep.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous">
+  <!-- theme-switcher SIN defer: aplica tema antes del primer paint -->
+  <script src="theme-switcher.js"></script>
   <script defer src="i18n.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -14,379 +19,777 @@
 
   <div class="slides-shell slides-shell--ascon">
 
-    <header style="margin-bottom:1.5rem">
-      <a href="index.html" class="section-back">← Inicio</a>
-      <div class="hero-badge">ASCON-128a · Teoría</div>
+    <!-- ══════════════════════════ HEADER ══════════════════════════ -->
+    <header style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;padding:8px 0 20px;border-bottom:1px solid var(--line)">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <a href="index.html" class="section-back">
+          <span data-lang="es">← Inicio</span>
+          <span data-lang="en" hidden>← Home</span>
+        </a>
+        <div class="hero-badge hero-badge--ascon">
+          ASCON-128a ·
+          <span data-lang="es">Teoría</span>
+          <span data-lang="en" hidden>Theory</span>
+        </div>
+      </div>
+      <div class="hero-tools-v2">
+        <div>
+          <span class="ascon-mlabel" data-i18n="language">IDIOMA</span>
+          <div class="ci-tabs" data-lang-pill-container>
+            <button type="button" class="ci-tab" data-lang-pill="es" aria-selected="true">ES</button>
+            <button type="button" class="ci-tab" data-lang-pill="en"  aria-selected="false">EN</button>
+          </div>
+        </div>
+        <div>
+          <span class="ascon-mlabel" data-i18n="theme">TEMA</span>
+          <select class="ci-select" data-theme-select></select>
+        </div>
+      </div>
     </header>
 
-    <!-- ── Slide 1 ── -->
+    <!-- ══════════════════════════ SLIDE 1 ══════════════════════════ -->
     <section class="slide active" id="slide-1">
       <div class="slide-header">
-        <span class="slide-num">01 / 08</span>
-        <h2>¿Qué es ASCON-128a?</h2>
+        <span class="slide-num" id="slide-num">01 / 10</span>
+        <h2 data-lang="es">¿Qué es ASCON-128a?</h2>
+        <h2 data-lang="en" hidden>What is ASCON-128a?</h2>
       </div>
-      <div class="diagram-box" style="font-size:.9rem">
+
+      <div data-lang="es">
+        <div class="diagram-box" style="font-size:.9rem">
+┌─────────────────────────────────────────────────────────┐
+│  ASCON-128a — Cifrado Autenticado con Datos Asociados   │
+│              (Authenticated Encryption with AD)         │
+├─────────────────────────────────────────────────────────┤
+│  Entradas : Clave (128 bits)  + Nonce (128 bits)        │
+│           + Datos Asociados (variable, sin cifrar)      │
+│           + Plaintext (variable)                        │
+│                                                         │
+│  Salidas  : Ciphertext  (igual longitud que Plaintext)  │
+│           + Tag de autenticación (128 bits)             │
+└─────────────────────────────────────────────────────────┘</div>
+        <div class="key-points">
+          <div class="key-point"><strong>AEAD:</strong> Cifra el plaintext Y autentica tanto el ciphertext como los datos asociados (metadatos visibles pero protegidos contra alteración).</div>
+          <div class="key-point"><strong>Estándar NIST LWC 2023:</strong> Seleccionado por el NIST como estándar de criptografía ligera. Ganador de CAESAR 2019 entre 57 candidatos. Diseñado en IAIK (TU Graz, Austria).</div>
+          <div class="key-point"><strong>Ideal para IoT y embebidos:</strong> Bajo consumo de energía, estado compacto de 320 bits, sin tablas de lookup ni operaciones costosas.</div>
+          <div class="key-point"><strong>Una sola pasada:</strong> Produce ciphertext + tag en un único recorrido sobre los datos — sin separar el paso de cifrado del de autenticación.</div>
+        </div>
+      </div>
+
+      <div data-lang="en" hidden>
+        <div class="diagram-box" style="font-size:.9rem">
 ┌─────────────────────────────────────────────────────────┐
 │  ASCON-128a — Authenticated Encryption with             │
 │              Associated Data (AEAD)                     │
 ├─────────────────────────────────────────────────────────┤
-│  Entradas : Key (128 bits)  + Nonce (128 bits)          │
-│           + Associated Data (variable, no cifrado)      │
-│           + Plaintext (variable)                        │
+│  Inputs  : Key (128 bits)  + Nonce (128 bits)           │
+│          + Associated Data (variable, not encrypted)    │
+│          + Plaintext (variable)                         │
 │                                                         │
-│  Salidas  : Ciphertext (= |Plaintext|)                  │
-│           + Tag de autenticación (128 bits)             │
-└─────────────────────────────────────────────────────────┘
-      </div>
-      <div class="key-points">
-        <div class="key-point">
-          <strong>AEAD:</strong> Cifra el plaintext Y autentica tanto el ciphertext como
-          los datos asociados (metadatos visibles pero intocables).
-        </div>
-        <div class="key-point">
-          <strong>Ganador CAESAR 2019:</strong> Seleccionado entre 57 candidatos como
-          el algoritmo de cifrado autenticado recomendado para entornos con restricciones
-          (IoT, sensores, embebidos).
-        </div>
-        <div class="key-point">
-          <strong>NIST Lightweight Crypto:</strong> Finalista del proceso de estandarización
-          NIST para criptografía ligera. Diseñado en IAIK (TU Graz, Austria).
-        </div>
-        <div class="key-point">
-          <strong>Sin padding costoso:</strong> Internamente usa una permutación sponge
-          eficiente — baja latencia, bajo consumo de energía.
+│  Outputs : Ciphertext  (same length as Plaintext)       │
+│          + Authentication Tag (128 bits)                │
+└─────────────────────────────────────────────────────────┘</div>
+        <div class="key-points">
+          <div class="key-point"><strong>AEAD:</strong> Encrypts the plaintext AND authenticates both the ciphertext and associated data (visible metadata protected against tampering).</div>
+          <div class="key-point"><strong>NIST LWC Standard 2023:</strong> Selected by NIST as the lightweight cryptography standard. Winner of CAESAR 2019 among 57 candidates. Designed at IAIK (TU Graz, Austria).</div>
+          <div class="key-point"><strong>Ideal for IoT and embedded:</strong> Low energy consumption, compact 320-bit state, no lookup tables or expensive operations.</div>
+          <div class="key-point"><strong>Single pass:</strong> Produces ciphertext + tag in a single pass over the data — no separate encryption and authentication steps.</div>
         </div>
       </div>
     </section>
 
-    <!-- ── Slide 2 ── -->
+    <!-- ══════════════════════════ SLIDE 2 ══════════════════════════ -->
     <section class="slide" id="slide-2">
       <div class="slide-header">
-        <span class="slide-num">02 / 08</span>
-        <h2>Estado interno: 5 × 64 bits</h2>
+        <span class="slide-num">02 / 10</span>
+        <h2 data-lang="es">Estado interno: 5 × 64 bits</h2>
+        <h2 data-lang="en" hidden>Internal State: 5 × 64 bits</h2>
       </div>
-      <div class="diagram-box">
+
+      <div data-lang="es">
+        <div class="diagram-box">
 Estado = [ x0 | x1 | x2 | x3 | x4 ]  →  320 bits totales
 
-Inicialización:
-  x0 = IV  = 0x80400c0600000000  (parámetros del algoritmo)
-  x1 = Key_high  (bits 127–64 de la clave)
-  x2 = Key_low   (bits  63– 0 de la clave)
-  x3 = Nonce_high
-  x4 = Nonce_low
+Inicialización (ASCON-128a):
+  x0 = IV  = 0x80800c0800000000   ← parámetros del algoritmo
+  x1 = Key_high   (bits 127–64 de la clave de 128 bits)
+  x2 = Key_low    (bits  63–0  de la clave de 128 bits)
+  x3 = Nonce_high (bits 127–64 del nonce de 128 bits)
+  x4 = Nonce_low  (bits  63–0  del nonce de 128 bits)
 
-IV descodificada:
-  0x80 = tamaño de clave (128 bits)
-  0x40 = tasa (rate) = 128 bits por bloque
-  0x0c = rondas pa = 12
-  0x06 = rondas pb = 6
+IV decodificada (0x80 80 0c 08):
+  0x80 = tamaño de clave = 128 bits
+  0x80 = rate            = 128 bits por bloque  ← 128a
+  0x0c = rondas pa       = 12
+  0x08 = rondas pb       =  8                   ← 128a</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Rate (x0‖x1):</strong> Los 128 bits superiores interactúan con los datos en cada absorción/extracción. En ASCON-128a el rate es de 128 bits — el doble que ASCON-128.</div>
+          <div class="key-point"><strong>Capacity (x2‖x3‖x4):</strong> Los 192 bits restantes nunca se exponen directamente. Actúan como "memoria secreta" que garantiza la seguridad de la construcción sponge.</div>
+          <div class="key-point"><strong>Construcción Sponge/Dúplex:</strong> El mismo estado de 320 bits absorbe entrada y exprime salida, alternando con la permutación interna según la fase activa.</div>
+        </div>
       </div>
-      <div class="key-points">
-        <div class="key-point">
-          <strong>Capacidad:</strong> Los 192 bits inferiores del estado (x2–x4 parcial)
-          actúan como capacidad y nunca se exponen directamente — garantizan seguridad.
-        </div>
-        <div class="key-point">
-          <strong>Rate (tasa):</strong> Los 128 bits superiores del estado (x0–x1) son
-          el "rate" — la parte que interactúa con los datos en cada paso de absorción/extracción.
-        </div>
-        <div class="key-point">
-          <strong>Construcción Sponge:</strong> ASCON es una esponja dúplex: absorbe datos
-          y exprime resultados usando la misma permutación, alternando según la fase.
+
+      <div data-lang="en" hidden>
+        <div class="diagram-box">
+State = [ x0 | x1 | x2 | x3 | x4 ]  →  320 bits total
+
+Initialization (ASCON-128a):
+  x0 = IV  = 0x80800c0800000000   ← algorithm parameters
+  x1 = Key_high   (bits 127–64 of the 128-bit key)
+  x2 = Key_low    (bits  63–0  of the 128-bit key)
+  x3 = Nonce_high (bits 127–64 of the 128-bit nonce)
+  x4 = Nonce_low  (bits  63–0  of the 128-bit nonce)
+
+IV decoded (0x80 80 0c 08):
+  0x80 = key size  = 128 bits
+  0x80 = rate      = 128 bits per block  ← 128a
+  0x0c = pa rounds = 12
+  0x08 = pb rounds =  8                  ← 128a</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Rate (x0‖x1):</strong> The top 128 bits interact with data during each absorption/extraction. In ASCON-128a the rate is 128 bits — double that of ASCON-128.</div>
+          <div class="key-point"><strong>Capacity (x2‖x3‖x4):</strong> The remaining 192 bits are never directly exposed. They act as "secret memory" that guarantees sponge construction security.</div>
+          <div class="key-point"><strong>Sponge/Duplex construction:</strong> The same 320-bit state absorbs input and squeezes output, alternating with the internal permutation depending on the active phase.</div>
         </div>
       </div>
     </section>
 
-    <!-- ── Slide 3 ── -->
+    <!-- ══════════════════════════ SLIDE 3 ══════════════════════════ -->
     <section class="slide" id="slide-3">
       <div class="slide-header">
-        <span class="slide-num">03 / 08</span>
-        <h2>S-box de 5 bits</h2>
+        <span class="slide-num">03 / 10</span>
+        <h2 data-lang="es">S-box de 5 bits</h2>
+        <h2 data-lang="en" hidden>5-bit S-box</h2>
       </div>
-      <div class="diagram-box">
-Entrada: una columna vertical de 5 bits (1 bit de cada x0–x4)
-Operación (64 columnas en paralelo):
 
-  Paso 1 — Pre-mezcla:
+      <div data-lang="es">
+        <div class="diagram-box">
+Entrada: columna vertical de 5 bits (1 bit de cada x0–x4)
+Operación en las 64 columnas simultáneamente:
+
+  Pre-mezcla:
     x0 ^= x4;  x4 ^= x3;  x2 ^= x1
 
-  Paso 2 — AND-NOT (5 operaciones):
-    t0 = x0 & ~x1    t1 = x1 & ~x2
-    t2 = x2 & ~x3    t3 = x3 & ~x4
-    t4 = x4 & ~x0
+  AND-NOT (introduce no-linealidad):
+    t0=x0; t1=x1; t2=x2; t3=x3; t4=x4;
+    x0 = t0 ^ (~t1 & t2);    x1 = t1 ^ (~t2 & t3);
+    x2 = t2 ^ (~t3 & t4);    x3 = t3 ^ (~t4 & t0);
+    x4 = t4 ^ (~t0 & t1);
 
-  Paso 3 — XOR final:
-    x0 ^= t1;  x1 ^= t2;  x2 ^= t3
-    x3 ^= t4;  x4 ^= t0
-
-  Paso 4 — Post-mezcla:
-    x1 ^= x0;  x0 ^= x4;  x3 ^= x2;  x2 = ~x2
+  Post-mezcla:
+    x1 ^= x0;  x0 ^= x4;  x3 ^= x2;  x2 = ~x2</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Sin tablas de lookup:</strong> Solo AND, NOT y XOR — implementable en hardware con pocos transistores, resistente a timing attacks en software.</div>
+          <div class="key-point"><strong>No-linealidad:</strong> Las operaciones AND hacen imposible describir la S-box con ecuaciones lineales, base del análisis diferencial y lineal.</div>
+          <div class="key-point"><strong>64 columnas en paralelo:</strong> Como opera bit a bit sobre los 5 registros, procesa las 64 posiciones de cada registro simultáneamente — paralelismo masivo en hardware.</div>
+        </div>
       </div>
-      <div class="key-points">
-        <div class="key-point">
-          <strong>Sin tablas:</strong> Usa solo AND, NOT y XOR → implementable en hardware
-          con pocos transistores y en software sin acceso a memoria (resistente a timing attacks).
-        </div>
-        <div class="key-point">
-          <strong>No linealidad:</strong> Las operaciones AND introducen no-linealidad,
-          haciendo imposible describir la S-box con ecuaciones lineales.
-        </div>
-        <div class="key-point">
-          <strong>64 en paralelo:</strong> Como opera bit a bit sobre los 5 registros,
-          se aplica simultáneamente a las 64 posiciones de bit — paralelismo masivo.
+
+      <div data-lang="en" hidden>
+        <div class="diagram-box">
+Input: 5-bit vertical column (1 bit from each x0–x4)
+Operation on all 64 columns simultaneously:
+
+  Pre-mixing:
+    x0 ^= x4;  x4 ^= x3;  x2 ^= x1
+
+  AND-NOT (introduces nonlinearity):
+    t0=x0; t1=x1; t2=x2; t3=x3; t4=x4;
+    x0 = t0 ^ (~t1 & t2);    x1 = t1 ^ (~t2 & t3);
+    x2 = t2 ^ (~t3 & t4);    x3 = t3 ^ (~t4 & t0);
+    x4 = t4 ^ (~t0 & t1);
+
+  Post-mixing:
+    x1 ^= x0;  x0 ^= x4;  x3 ^= x2;  x2 = ~x2</div>
+        <div class="key-points">
+          <div class="key-point"><strong>No lookup tables:</strong> Only AND, NOT and XOR — implementable in hardware with few transistors, resistant to timing attacks in software.</div>
+          <div class="key-point"><strong>Nonlinearity:</strong> AND operations make it impossible to describe the S-box with linear equations — the foundation against differential and linear cryptanalysis.</div>
+          <div class="key-point"><strong>64 columns in parallel:</strong> Operating bit-by-bit over the 5 registers processes all 64 bit positions of each register simultaneously — massive hardware parallelism.</div>
         </div>
       </div>
     </section>
 
-    <!-- ── Slide 4 ── -->
+    <!-- ══════════════════════════ SLIDE 4 ══════════════════════════ -->
     <section class="slide" id="slide-4">
       <div class="slide-header">
-        <span class="slide-num">04 / 08</span>
-        <h2>Capa lineal — Difusión</h2>
+        <span class="slide-num">04 / 10</span>
+        <h2 data-lang="es">Capa lineal — Difusión</h2>
+        <h2 data-lang="en" hidden>Linear Layer — Diffusion</h2>
       </div>
       <p style="text-align:center;padding:.5rem 0">
         $$\begin{aligned}
-          x_0 &\leftarrow x_0 \oplus \mathrm{ROL}(x_0,\,19) \oplus \mathrm{ROL}(x_0,\,28) \\
-          x_1 &\leftarrow x_1 \oplus \mathrm{ROL}(x_1,\,61) \oplus \mathrm{ROL}(x_1,\,39) \\
-          x_2 &\leftarrow x_2 \oplus \mathrm{ROL}(x_2,\,1)  \oplus \mathrm{ROL}(x_2,\,6)  \\
-          x_3 &\leftarrow x_3 \oplus \mathrm{ROL}(x_3,\,10) \oplus \mathrm{ROL}(x_3,\,17) \\
-          x_4 &\leftarrow x_4 \oplus \mathrm{ROL}(x_4,\,7)  \oplus \mathrm{ROL}(x_4,\,41)
+          x_0 &\leftarrow x_0 \oplus \mathrm{ROR}(x_0,\,19) \oplus \mathrm{ROR}(x_0,\,28) \\
+          x_1 &\leftarrow x_1 \oplus \mathrm{ROR}(x_1,\,61) \oplus \mathrm{ROR}(x_1,\,39) \\
+          x_2 &\leftarrow x_2 \oplus \mathrm{ROR}(x_2,\,1)  \oplus \mathrm{ROR}(x_2,\,6)  \\
+          x_3 &\leftarrow x_3 \oplus \mathrm{ROR}(x_3,\,10) \oplus \mathrm{ROR}(x_3,\,17) \\
+          x_4 &\leftarrow x_4 \oplus \mathrm{ROR}(x_4,\,7)  \oplus \mathrm{ROR}(x_4,\,41)
         \end{aligned}$$
       </p>
-      <div class="diagram-box">
-Capa lineal — rotaciones por registro (ROL = rotate left de 64 bits):
-  Cada xi se mezcla con 2 copias rotadas de sí mismo.
-  Las constantes son distintas por registro → sin simetría explotable.
+      <div data-lang="es">
+        <div class="diagram-box">
+Capa lineal — cada registro xi se XOR-ea con 2 rotaciones de sí mismo
+ROR = rotate right de 64 bits
+
+  Constantes elegidas para maximizar difusión:
+  x0: (19, 28)  x1: (61, 39)  x2: (1,  6)
+  x3: (10, 17)  x4: (7,  41)
+
+  Distintas por registro → sin simetría explotable entre xi</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Difusión intra-registro:</strong> Cada bit de un registro afecta a muchos otros bits del mismo registro tras la rotación y XOR — dispersión completa en pocas rondas.</div>
+          <div class="key-point"><strong>Difusión inter-registro:</strong> La S-box ya creó dependencias entre registros; la capa lineal amplía esas dependencias dentro de cada uno.</div>
+          <div class="key-point"><strong>Full diffusion:</strong> La combinación S-box + capa lineal alcanza full diffusion rápidamente — un solo bit modificado afecta el estado completo en pocas rondas.</div>
+        </div>
       </div>
-      <div class="key-points">
-        <div class="key-point">
-          <strong>Difusión intra-registro:</strong> Cada bit de un registro afecta a muchos
-          otros bits del mismo registro tras la rotación y XOR.
-        </div>
-        <div class="key-point">
-          <strong>Difusión inter-registro:</strong> La S-box ya creó dependencias entre
-          registros; la capa lineal amplía esas dependencias dentro de cada uno.
-        </div>
-        <div class="key-point">
-          <strong>MDS implícito:</strong> La combinación S-box + capa lineal alcanza
-          rápidamente full diffusion — cualquier cambio en 1 bit afecta el estado completo
-          en pocas rondas.
+      <div data-lang="en" hidden>
+        <div class="diagram-box">
+Linear layer — each register xi is XORed with 2 rotations of itself
+ROR = 64-bit rotate right
+
+  Constants chosen to maximize diffusion:
+  x0: (19, 28)  x1: (61, 39)  x2: (1,  6)
+  x3: (10, 17)  x4: (7,  41)
+
+  Different per register → no exploitable symmetry between xi</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Intra-register diffusion:</strong> Each bit of a register affects many other bits in the same register after rotation and XOR — complete spreading in few rounds.</div>
+          <div class="key-point"><strong>Inter-register diffusion:</strong> The S-box already created dependencies between registers; the linear layer amplifies those dependencies within each one.</div>
+          <div class="key-point"><strong>Full diffusion:</strong> The S-box + linear layer combination reaches full diffusion quickly — a single modified bit affects the complete state in few rounds.</div>
         </div>
       </div>
     </section>
 
-    <!-- ── Slide 5 ── -->
+    <!-- ══════════════════════════ SLIDE 5 ══════════════════════════ -->
     <section class="slide" id="slide-5">
       <div class="slide-header">
-        <span class="slide-num">05 / 08</span>
-        <h2>Permutaciones p<sub>a</sub> y p<sub>b</sub></h2>
+        <span class="slide-num">05 / 10</span>
+        <h2 data-lang="es">Permutaciones p<sub>a</sub> y p<sub>b</sub></h2>
+        <h2 data-lang="en" hidden>Permutations p<sub>a</sub> and p<sub>b</sub></h2>
       </div>
-      <div class="diagram-box">
-Una ronda ASCON = Constante RC ⊕ x2  →  S-box  →  Capa lineal
 
-Constantes de ronda RC (aplicadas a x2):
+      <div data-lang="es">
+        <div class="diagram-box">
+Una ronda ASCON = RC ⊕ x2  →  S-box (5 bits)  →  Capa lineal
+
+Constantes de ronda RC (aplicadas a x2 al inicio de cada ronda):
   r0=0xf0  r1=0xe1  r2=0xd2  r3=0xc3
   r4=0xb4  r5=0xa5  r6=0x96  r7=0x87
   r8=0x78  r9=0x69  r10=0x5a  r11=0x4b
 
-pa = 12 rondas (índices 0–11)  — máxima seguridad
-pb =  6 rondas (índices 6–11)  — velocidad en datos
-
-Uso:
-  pa → Inicialización, Finalización
-  pa → Cifrado (ASCON-128a usa pa para mayor seguridad)
-  pb → Absorción de AD
-      </div>
-      <div class="key-points">
-        <div class="key-point">
-          <strong>Diferencia ASCON-128 vs -128a:</strong> ASCON-128 usa pb (6R) en cifrado
-          con bloques de 64 bits (rate=64). ASCON-128a usa pa (12R) con bloques de 128 bits
-          (rate=128) — el doble de throughput al procesar mensajes largos.
+pa = 12 rondas (índices 0–11)  → Inicialización y Finalización
+pb =  8 rondas (índices 4–11)  → ASCON-128a: AD y Cifrado
+pb =  6 rondas (índices 6–11)  → ASCON-128:  AD y Cifrado</div>
+        <div class="key-points">
+          <div class="key-point"><strong>ASCON-128 vs ASCON-128a:</strong> ASCON-128 usa pb=6 rondas con rate=64 bits por bloque. ASCON-128a usa pb=8 rondas con rate=128 bits — mayor throughput, ligera reducción de margen de seguridad.</div>
+          <div class="key-point"><strong>RC evitan simetría:</strong> Las 12 constantes distintas hacen que cada ronda sea única — evitan slide attacks, puntos fijos y cualquier simetría estructural de la permutación.</div>
+          <div class="key-point"><strong>pa siempre 12 rondas:</strong> Las fases de inicialización y finalización usan siempre pa independientemente de la variante — máximo margen de seguridad en las fases críticas.</div>
         </div>
-        <div class="key-point">
-          <strong>RC evitan simetría:</strong> Las constantes de ronda distintas hacen
-          que cada ronda sea única — sin puntos fijos ni simetría explotable en la permutación.
+      </div>
+
+      <div data-lang="en" hidden>
+        <div class="diagram-box">
+One ASCON round = RC ⊕ x2  →  S-box (5-bit)  →  Linear layer
+
+Round constants RC (applied to x2 at the start of each round):
+  r0=0xf0  r1=0xe1  r2=0xd2  r3=0xc3
+  r4=0xb4  r5=0xa5  r6=0x96  r7=0x87
+  r8=0x78  r9=0x69  r10=0x5a  r11=0x4b
+
+pa = 12 rounds (indices 0–11)  → Initialization and Finalization
+pb =  8 rounds (indices 4–11)  → ASCON-128a: AD and Encryption
+pb =  6 rounds (indices 6–11)  → ASCON-128:  AD and Encryption</div>
+        <div class="key-points">
+          <div class="key-point"><strong>ASCON-128 vs ASCON-128a:</strong> ASCON-128 uses pb=6 rounds with rate=64 bits per block. ASCON-128a uses pb=8 rounds with rate=128 bits — higher throughput, slightly reduced security margin.</div>
+          <div class="key-point"><strong>RC prevent symmetry:</strong> The 12 distinct constants make each round unique — preventing slide attacks, fixed points, and any structural symmetry in the permutation.</div>
+          <div class="key-point"><strong>pa always 12 rounds:</strong> Initialization and finalization phases always use pa regardless of the variant — maximum security margin in the critical phases.</div>
         </div>
       </div>
     </section>
 
-    <!-- ── Slide 6 ── -->
+    <!-- ══════════════════════════ SLIDE 6 ══════════════════════════ -->
     <section class="slide" id="slide-6">
       <div class="slide-header">
-        <span class="slide-num">06 / 08</span>
-        <h2>AEAD — Datos Asociados</h2>
+        <span class="slide-num">06 / 10</span>
+        <h2 data-lang="es">Datos Asociados (AD)</h2>
+        <h2 data-lang="en" hidden>Associated Data (AD)</h2>
       </div>
-      <div class="diagram-box">
-Associated Data (AD) = datos autenticados pero NO cifrados
 
-Ejemplos de AD:
+      <div data-lang="es">
+        <div class="diagram-box">
+AD = datos autenticados pero NO cifrados
+
+Casos de uso típicos:
   • Cabeceras de paquetes de red (IP, puerto, protocolo)
   • Metadatos de mensajes (timestamp, ID de sesión)
-  • Identificadores de dispositivo en IoT
+  • Identificadores de dispositivo en IoT/Matter/Thread
 
-Proceso de absorción:
-  Para cada bloque de 128 bits de AD:
-    1. Aplicar padding ASCON (bit '1' + ceros)
-    2. Estado[x0] ⊕= bloque_AD
-    3. Aplicar pb (6 rondas)
-  Al final: Estado[x4] ⊕= 1  (domain separation)
+Proceso de absorción AD (ASCON-128a, rate=128 bits):
+  Para cada bloque de 16 bytes de AD:
+    1. Padding: bloque ‖ 0x80 ‖ 0x00... hasta 16 bytes
+    2. (x0‖x1) ⊕= bloque_AD_padded
+    3. Aplicar pb (8 rondas)
+  Al finalizar todo el AD:
+    x4 ⊕= 1    ← separación de dominio (domain separation)</div>
+        <div class="key-points">
+          <div class="key-point"><strong>¿Por qué AD?</strong> El receptor verifica que los metadatos no fueron alterados en tránsito, sin necesidad de cifrarlos — eficiencia y flexibilidad en protocolos de red.</div>
+          <div class="key-point"><strong>Domain separation (x4 ⊕ 1):</strong> Garantiza que el estado tras AD vacío sea distinto al estado tras AD no vacío, evitando ambigüedades entre mensajes de diferente estructura.</div>
+          <div class="key-point"><strong>AD vacío:</strong> Si no hay datos asociados, la absorción se omite pero el domain separation (x4 ⊕ 1) se aplica igualmente — el estado siempre avanza de forma determinista.</div>
+        </div>
       </div>
-      <div class="key-points">
-        <div class="key-point">
-          <strong>¿Por qué AD?</strong> El receptor puede verificar que los metadatos
-          no fueron alterados, sin necesidad de cifrarlos (eficiencia).
-        </div>
-        <div class="key-point">
-          <strong>Domain separation:</strong> El XOR final (x4 ⊕ 1) garantiza que la
-          fase de AD y la de cifrado produzcan estados internos distintos aunque
-          los datos sean iguales.
-        </div>
-        <div class="key-point">
-          <strong>AD vacío:</strong> Si no hay AD, igual se aplica el domain separation.
-          El estado avanza directamente a la fase de cifrado.
+
+      <div data-lang="en" hidden>
+        <div class="diagram-box">
+AD = authenticated but NOT encrypted data
+
+Typical use cases:
+  • Network packet headers (IP, port, protocol)
+  • Message metadata (timestamp, session ID)
+  • Device identifiers in IoT/Matter/Thread
+
+AD absorption process (ASCON-128a, rate=128 bits):
+  For each 16-byte block of AD:
+    1. Padding: block ‖ 0x80 ‖ 0x00... up to 16 bytes
+    2. (x0‖x1) ⊕= padded_AD_block
+    3. Apply pb (8 rounds)
+  After all AD blocks:
+    x4 ⊕= 1    ← domain separation</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Why AD?</strong> The receiver verifies that metadata was not altered in transit, without needing to encrypt it — efficiency and flexibility in network protocols.</div>
+          <div class="key-point"><strong>Domain separation (x4 ⊕ 1):</strong> Ensures the state after empty AD is distinct from the state after non-empty AD, avoiding ambiguity between messages of different structure.</div>
+          <div class="key-point"><strong>Empty AD:</strong> If there is no associated data, absorption is skipped but domain separation (x4 ⊕ 1) is applied anyway — the state always advances deterministically.</div>
         </div>
       </div>
     </section>
 
-    <!-- ── Slide 7 ── -->
+    <!-- ══════════════════════════ SLIDE 7 ══════════════════════════ -->
     <section class="slide" id="slide-7">
       <div class="slide-header">
-        <span class="slide-num">07 / 08</span>
-        <h2>Las 4 fases del algoritmo</h2>
+        <span class="slide-num">07 / 10</span>
+        <h2 data-lang="es">Las 4 fases del algoritmo</h2>
+        <h2 data-lang="en" hidden>The 4 Algorithm Phases</h2>
       </div>
-      <div class="diagram-box">
+
+      <div data-lang="es">
+        <div class="diagram-box">
 ┌──────────────────────────────────────────────────────────┐
 │ 1. INICIALIZACIÓN                                        │
-│    Estado = IV ‖ Key ‖ Nonce                             │
-│    → pa(12 rondas)                                       │
-│    → x3 ⊕= Key_high ; x4 ⊕= Key_low                    │
+│    Estado = IV ‖ Key ‖ Nonce   →  pa (12 rondas)        │
+│    x3 ⊕= Key_high ;  x4 ⊕= Key_low                     │
 ├──────────────────────────────────────────────────────────┤
-│ 2. ABSORCIÓN AD                                          │
-│    Para cada bloque AD de 128 bits:                      │
-│      x0‖x1 ⊕= bloque_AD_padded → pb(6 rondas)          │
+│ 2. ABSORCIÓN AD  (si hay datos asociados)                │
+│    Para cada bloque AD (16 bytes + padding):             │
+│      (x0‖x1) ⊕= bloque_AD  →  pb (8 rondas)  [128a]   │
 │    x4 ⊕= 1  (domain separation)                         │
 ├──────────────────────────────────────────────────────────┤
 │ 3. CIFRADO                                               │
-│    Para cada bloque PT de 128 bits:                      │
-│      CT = x0‖x1 ⊕ PT  (extracción)                     │
-│      x0‖x1 = CT        (actualizar estado)              │
-│      → pa(12 rondas)                                     │
+│    Para cada bloque PT (16 bytes + padding):             │
+│      CT = (x0‖x1) ⊕ PT   (extracción del keystream)    │
+│      (x0‖x1) = CT         (actualizar estado con CT)    │
+│      →  pb (8 rondas)  [128a]                            │
 ├──────────────────────────────────────────────────────────┤
 │ 4. FINALIZACIÓN                                          │
-│    x1 ⊕= Key_high ; x2 ⊕= Key_low                      │
-│    → pa(12 rondas)                                       │
-│    Tag = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low)             │
-└──────────────────────────────────────────────────────────┘
-      </div>
-      <div class="key-points">
-        <div class="key-point">
-          <strong>Secuencial:</strong> Cada fase depende del estado producido por la anterior.
-          No se puede paralelizar entre fases.
+│    x1 ⊕= Key_high ;  x2 ⊕= Key_low                     │
+│    →  pa (12 rondas)                                     │
+│    Tag = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low)  [128 bits] │
+└──────────────────────────────────────────────────────────┘</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Secuencial:</strong> Cada fase depende del estado producido por la anterior. La clave aparece en inicialización y finalización — liga el tag a la clave, imposibilitando falsificación.</div>
+          <div class="key-point"><strong>Estado actualizado con CT:</strong> En la fase de cifrado el estado absorbe el ciphertext (no el plaintext). Esto garantiza que el tag cubre el CT y no solo el PT.</div>
         </div>
-        <div class="key-point">
-          <strong>Key al inicio y al final:</strong> La clave aparece en la inicialización
-          y en la finalización — esto liga el tag a la clave, imposibilitando la falsificación
-          sin conocerla.
+      </div>
+
+      <div data-lang="en" hidden>
+        <div class="diagram-box">
+┌──────────────────────────────────────────────────────────┐
+│ 1. INITIALIZATION                                        │
+│    State = IV ‖ Key ‖ Nonce   →  pa (12 rounds)         │
+│    x3 ⊕= Key_high ;  x4 ⊕= Key_low                     │
+├──────────────────────────────────────────────────────────┤
+│ 2. AD ABSORPTION  (if there is associated data)          │
+│    For each AD block (16 bytes + padding):               │
+│      (x0‖x1) ⊕= AD_block  →  pb (8 rounds)  [128a]    │
+│    x4 ⊕= 1  (domain separation)                         │
+├──────────────────────────────────────────────────────────┤
+│ 3. ENCRYPTION                                            │
+│    For each PT block (16 bytes + padding):               │
+│      CT = (x0‖x1) ⊕ PT    (keystream extraction)       │
+│      (x0‖x1) = CT          (update state with CT)       │
+│      →  pb (8 rounds)  [128a]                            │
+├──────────────────────────────────────────────────────────┤
+│ 4. FINALIZATION                                          │
+│    x1 ⊕= Key_high ;  x2 ⊕= Key_low                     │
+│    →  pa (12 rounds)                                     │
+│    Tag = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low)  [128 bits] │
+└──────────────────────────────────────────────────────────┘</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Sequential:</strong> Each phase depends on the state produced by the previous one. The key appears in initialization and finalization — binding the tag to the key, making forgery impossible.</div>
+          <div class="key-point"><strong>State updated with CT:</strong> In the encryption phase, the state absorbs the ciphertext (not the plaintext). This ensures the tag covers the CT and not just the PT.</div>
         </div>
       </div>
     </section>
 
-    <!-- ── Slide 8 ── -->
+    <!-- ══════════════════════════ SLIDE 8 ══════════════════════════ -->
     <section class="slide" id="slide-8">
       <div class="slide-header">
-        <span class="slide-num">08 / 08</span>
-        <h2>Tag de autenticación y seguridad</h2>
+        <span class="slide-num">08 / 10</span>
+        <h2 data-lang="es">Tag de autenticación y seguridad</h2>
+        <h2 data-lang="en" hidden>Authentication Tag and Security</h2>
       </div>
-      <div class="diagram-box">
+
+      <div data-lang="es">
+        <div class="diagram-box">
 Tag (128 bits) = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low)
 
 Para descifrar y verificar:
-  1. Recalcular todo el proceso con Key, Nonce, AD, CT
-  2. Comparar tag calculado con tag recibido
-  3. ¿Iguales? → mensaje auténtico e íntegro → aceptar PT
-     ¿Distintos? → mensaje alterado o clave errónea → rechazar
+  1. Recorrer el proceso completo con Key, Nonce, AD, CT
+  2. Calcular tag_calculado
+  3. Comparar en tiempo constante: tag_calculado == tag_recibido
+     ✓ Iguales   → mensaje auténtico e íntegro → aceptar PT
+     ✗ Distintos → mensaje alterado o clave errónea → rechazar
 
-Propiedades de seguridad:
-  • Confidencialidad : IND-CCA2  (128 bits de seguridad)
-  • Integridad/Auth  : INT-CTXT  (128 bits de seguridad)
-  • Seguridad nonce  : Nonce debe ser único por (Key, mensaje)
+Propiedades formales de seguridad:
+  Confidencialidad : IND-CCA2  (128 bits de seguridad)
+  Integridad/Auth  : INT-CTXT  (128 bits de seguridad)
+  Nonce           : único por (Key, mensaje) — obligatorio</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Nonce misuse:</strong> Si se reutiliza el mismo nonce con la misma clave, un atacante puede hacer CT1 ⊕ CT2 = PT1 ⊕ PT2 y recuperar los plaintexts. El nonce DEBE ser único.</div>
+          <div class="key-point"><strong>Comparación en tiempo constante:</strong> Nunca compares tags byte a byte con early exit — un atacante puede medir el tiempo y deducir cuántos bytes coinciden (timing attack).</div>
+          <div class="key-point"><strong>Implementación de producción:</strong> Para uso real, usá una librería auditada: libsodium, BouncyCastle, mbedTLS (con ASCON support). Esta visualización es educativa.</div>
+        </div>
       </div>
-      <div class="key-points">
-        <div class="key-point">
-          <strong>Reutilización de nonce (nonce misuse):</strong> Si se usa el mismo nonce
-          dos veces con la misma clave, el atacante puede recuperar el plaintext haciendo XOR
-          de los dos ciphertexts. El nonce DEBE ser único.
-        </div>
-        <div class="key-point">
-          <strong>Comparación de tags:</strong> Siempre compará tags en tiempo constante
-          (evitando timing attacks). Nunca uses comparación byte-a-byte con early exit.
-        </div>
-        <div class="key-point">
-          <strong>Uso en producción:</strong> Para aplicaciones reales usá una librería
-          auditada (libsodium, Bouncy Castle, etc.). Esta implementación es educativa.
+
+      <div data-lang="en" hidden>
+        <div class="diagram-box">
+Tag (128 bits) = (x3 ⊕ Key_high) ‖ (x4 ⊕ Key_low)
+
+To decrypt and verify:
+  1. Run the full process with Key, Nonce, AD, CT
+  2. Compute computed_tag
+  3. Constant-time compare: computed_tag == received_tag
+     ✓ Match    → message is authentic and intact → accept PT
+     ✗ Mismatch → message altered or wrong key → reject
+
+Formal security properties:
+  Confidentiality : IND-CCA2  (128-bit security)
+  Integrity/Auth  : INT-CTXT  (128-bit security)
+  Nonce          : unique per (Key, message) — mandatory</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Nonce misuse:</strong> If the same nonce is reused with the same key, an attacker can compute CT1 ⊕ CT2 = PT1 ⊕ PT2 and recover both plaintexts. The nonce MUST be unique.</div>
+          <div class="key-point"><strong>Constant-time comparison:</strong> Never compare tags byte by byte with early exit — an attacker can measure timing and deduce how many bytes match (timing attack).</div>
+          <div class="key-point"><strong>Production use:</strong> For real use, use an audited library: libsodium, BouncyCastle, mbedTLS (with ASCON support). This visualizer is for educational purposes.</div>
         </div>
       </div>
     </section>
 
-    <!-- ── Navegación ── -->
+    <!-- ══════════════════════════ SLIDE 9 (NEW D2) ══════════════════════════ -->
+    <section class="slide" id="slide-9">
+      <div class="slide-header">
+        <span class="slide-num">09 / 10</span>
+        <h2 data-lang="es">ASCON-128 vs ASCON-128a</h2>
+        <h2 data-lang="en" hidden>ASCON-128 vs ASCON-128a</h2>
+      </div>
+
+      <div data-lang="es">
+        <div style="overflow-x:auto;margin-bottom:1rem">
+          <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.85rem">
+            <thead>
+              <tr style="border-bottom:2px solid var(--accent-ascon)">
+                <th style="text-align:left;padding:8px 12px;color:var(--muted)">Parámetro</th>
+                <th style="padding:8px 12px;color:var(--text);text-align:center">ASCON-128</th>
+                <th style="padding:8px 12px;color:var(--accent-ascon);text-align:center">ASCON-128a ★</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">Clave</td><td style="text-align:center;padding:8px 12px">128 bits</td><td style="text-align:center;padding:8px 12px">128 bits</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">Nonce</td><td style="text-align:center;padding:8px 12px">128 bits</td><td style="text-align:center;padding:8px 12px">128 bits</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">Tag</td><td style="text-align:center;padding:8px 12px">128 bits</td><td style="text-align:center;padding:8px 12px">128 bits</td></tr>
+              <tr style="border-bottom:1px solid var(--line);background:rgba(255,255,255,.03)"><td style="padding:8px 12px;color:var(--muted)">Rate (bloque)</td><td style="text-align:center;padding:8px 12px">64 bits (8 B)</td><td style="text-align:center;padding:8px 12px;color:var(--accent-ascon);font-weight:600">128 bits (16 B)</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">pb AD/Cifrado</td><td style="text-align:center;padding:8px 12px">6 rondas</td><td style="text-align:center;padding:8px 12px;color:var(--accent-ascon);font-weight:600">8 rondas</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">pa Init/Final</td><td style="text-align:center;padding:8px 12px">12 rondas</td><td style="text-align:center;padding:8px 12px">12 rondas</td></tr>
+              <tr style="border-bottom:1px solid var(--line);background:rgba(255,255,255,.03)"><td style="padding:8px 12px;color:var(--muted)">Throughput</td><td style="text-align:center;padding:8px 12px">Menor</td><td style="text-align:center;padding:8px 12px;color:var(--accent-ascon);font-weight:600">Mayor ↑</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">Margen seguridad</td><td style="text-align:center;padding:8px 12px;color:var(--accent-ascon)">Mayor ↑</td><td style="text-align:center;padding:8px 12px">Menor</td></tr>
+              <tr style="border-bottom:1px solid var(--line);background:rgba(255,255,255,.03)"><td style="padding:8px 12px;color:var(--muted)">IV</td><td style="text-align:center;padding:8px 12px;font-size:.75rem">80400c0600000000</td><td style="text-align:center;padding:8px 12px;font-size:.75rem">80800c0800000000</td></tr>
+              <tr><td style="padding:8px 12px;color:var(--muted)">Seguridad vs ataques genéricos</td><td style="text-align:center;padding:8px 12px">128 bits</td><td style="text-align:center;padding:8px 12px">128 bits</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="key-points">
+          <div class="key-point"><strong>¿Cuándo usar 128a?</strong> Cuando el throughput importa (mensajes largos, dispositivos con CPU moderada). Rate doble = el doble de datos procesados por invocación de pb.</div>
+          <div class="key-point"><strong>¿Cuándo usar 128?</strong> Cuando el margen de seguridad es prioritario sobre la velocidad, o en hardware extremadamente restringido donde el rate pequeño ayuda al diseño.</div>
+          <div class="key-point"><strong>Ambos son estándar NIST:</strong> ASCON-128 y ASCON-128a son las dos variantes AEAD del estándar NIST LWC (FIPS 202-like, publicado 2023).</div>
+        </div>
+      </div>
+
+      <div data-lang="en" hidden>
+        <div style="overflow-x:auto;margin-bottom:1rem">
+          <table style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.85rem">
+            <thead>
+              <tr style="border-bottom:2px solid var(--accent-ascon)">
+                <th style="text-align:left;padding:8px 12px;color:var(--muted)">Parameter</th>
+                <th style="padding:8px 12px;color:var(--text);text-align:center">ASCON-128</th>
+                <th style="padding:8px 12px;color:var(--accent-ascon);text-align:center">ASCON-128a ★</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">Key</td><td style="text-align:center;padding:8px 12px">128 bits</td><td style="text-align:center;padding:8px 12px">128 bits</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">Nonce</td><td style="text-align:center;padding:8px 12px">128 bits</td><td style="text-align:center;padding:8px 12px">128 bits</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">Tag</td><td style="text-align:center;padding:8px 12px">128 bits</td><td style="text-align:center;padding:8px 12px">128 bits</td></tr>
+              <tr style="border-bottom:1px solid var(--line);background:rgba(255,255,255,.03)"><td style="padding:8px 12px;color:var(--muted)">Rate (block size)</td><td style="text-align:center;padding:8px 12px">64 bits (8 B)</td><td style="text-align:center;padding:8px 12px;color:var(--accent-ascon);font-weight:600">128 bits (16 B)</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">pb AD/Encryption</td><td style="text-align:center;padding:8px 12px">6 rounds</td><td style="text-align:center;padding:8px 12px;color:var(--accent-ascon);font-weight:600">8 rounds</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">pa Init/Final</td><td style="text-align:center;padding:8px 12px">12 rounds</td><td style="text-align:center;padding:8px 12px">12 rounds</td></tr>
+              <tr style="border-bottom:1px solid var(--line);background:rgba(255,255,255,.03)"><td style="padding:8px 12px;color:var(--muted)">Throughput</td><td style="text-align:center;padding:8px 12px">Lower</td><td style="text-align:center;padding:8px 12px;color:var(--accent-ascon);font-weight:600">Higher ↑</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px 12px;color:var(--muted)">Security margin</td><td style="text-align:center;padding:8px 12px;color:var(--accent-ascon)">Higher ↑</td><td style="text-align:center;padding:8px 12px">Lower</td></tr>
+              <tr style="border-bottom:1px solid var(--line);background:rgba(255,255,255,.03)"><td style="padding:8px 12px;color:var(--muted)">IV</td><td style="text-align:center;padding:8px 12px;font-size:.75rem">80400c0600000000</td><td style="text-align:center;padding:8px 12px;font-size:.75rem">80800c0800000000</td></tr>
+              <tr><td style="padding:8px 12px;color:var(--muted)">Security vs generic attacks</td><td style="text-align:center;padding:8px 12px">128 bits</td><td style="text-align:center;padding:8px 12px">128 bits</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="key-points">
+          <div class="key-point"><strong>When to use 128a?</strong> When throughput matters (long messages, moderately-powered devices). Double rate = twice as much data processed per pb invocation.</div>
+          <div class="key-point"><strong>When to use 128?</strong> When security margin takes priority over speed, or on extremely constrained hardware where the smaller rate helps the design.</div>
+          <div class="key-point"><strong>Both are NIST standards:</strong> ASCON-128 and ASCON-128a are the two AEAD variants of the NIST LWC standard (FIPS 202-like, published 2023).</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ SLIDE 10 (NEW D1) ══════════════════════════ -->
+    <section class="slide" id="slide-10">
+      <div class="slide-header">
+        <span class="slide-num">10 / 10</span>
+        <h2 data-lang="es">ASCON en el mundo real — SOC / DFIR</h2>
+        <h2 data-lang="en" hidden>ASCON in the Real World — SOC / DFIR</h2>
+      </div>
+
+      <div data-lang="es">
+        <details class="ci-callout" style="--op-accent:var(--accent-ascon);margin-bottom:1rem" open>
+          <summary>Identificar ASCON en binarios y firmware</summary>
+          <div class="ci-callout__body">
+            <ul class="ci-callout__list">
+              <li><strong>Firma de ASCON-128a:</strong> buscar <code>80 80 0C 08 00 00 00 00</code> en big-endian — esa es la IV que inicializa el estado. Su presencia indica una implementación de ASCON-128a.</li>
+              <li><strong>Firma de ASCON-128:</strong> buscar <code>80 40 0C 06 00 00 00 00</code> — IV de ASCON-128.</li>
+              <li><strong>Comando grep:</strong> <code>grep -rl $'\x80\x80\x0c\x08' firmware/</code> o con <code>binwalk --signature</code> si tenés reglas customizadas.</li>
+              <li><strong>YARA rule:</strong> <code>uint64be(offset) == 0x80800c0800000000</code> como condición para detectar el estado inicial.</li>
+            </ul>
+          </div>
+        </details>
+        <div class="diagram-box" style="font-size:.85rem">
+Dónde encontrar ASCON en producción:
+  Protocolos IoT : Matter, Thread, OSCORE (CoAP/6LoWPAN)
+  Firmware       : STM32 + libsodium, ESP32-C3, nRF52840
+  Librerías      : ascon-c (C), ascon-rs (Rust), pyascon (Python)
+  TLS            : DTLS 1.3 con cipher suite TLS_ASCON_128A_SHA256
+
+Escenario de ataque — nonce misuse en producción:
+  Si un dispositivo IoT reinicia y resetea su contador de nonces:
+  • El nonce se repite con la misma clave
+  • CT1 ⊕ CT2 = PT1 ⊕ PT2  (crib-dragging posible)
+  • Con palabras conocidas del protocolo → PT recuperable
+  Mitigación: nonce con timestamp de alta resolución o DRBG</div>
+        <div class="key-points">
+          <div class="key-point"><strong>Vector de análisis en DFIR:</strong> Al analizar tráfico cifrado en IoT, identificar la variante ASCON (por la IV) permite determinar el tamaño de rate y los límites de seguridad de cada mensaje.</div>
+          <div class="key-point"><strong>Hardening:</strong> En audit de firmware, verificar que los nonces no se generen con PRNG sin semilla post-reset. Un generador de nonces predecible rompe la seguridad AEAD.</div>
+        </div>
+
+        <!-- CTA final prominente -->
+        <div style="text-align:center;margin-top:1.2rem;padding:1.2rem;border:1px solid var(--accent-ascon-border);border-radius:12px;background:var(--accent-ascon-glow)">
+          <p style="color:var(--text);margin:0 0 .8rem;font-size:.95rem">¿Listo para ver ASCON en acción paso a paso?</p>
+          <a href="ascon-demo.html" class="btn-ascon-primary" style="display:inline-block;text-decoration:none;padding:10px 24px;border-radius:8px">▶ Abrir Demo Lab</a>
+        </div>
+      </div>
+
+      <div data-lang="en" hidden>
+        <details class="ci-callout" style="--op-accent:var(--accent-ascon);margin-bottom:1rem" open>
+          <summary>Identifying ASCON in binaries and firmware</summary>
+          <div class="ci-callout__body">
+            <ul class="ci-callout__list">
+              <li><strong>ASCON-128a signature:</strong> search for <code>80 80 0C 08 00 00 00 00</code> in big-endian — that is the IV that initializes the state. Its presence indicates an ASCON-128a implementation.</li>
+              <li><strong>ASCON-128 signature:</strong> search for <code>80 40 0C 06 00 00 00 00</code> — ASCON-128 IV.</li>
+              <li><strong>grep command:</strong> <code>grep -rl $'\x80\x80\x0c\x08' firmware/</code> or with <code>binwalk --signature</code> if you have custom rules.</li>
+              <li><strong>YARA rule:</strong> <code>uint64be(offset) == 0x80800c0800000000</code> as condition to detect the initial state.</li>
+            </ul>
+          </div>
+        </details>
+        <div class="diagram-box" style="font-size:.85rem">
+Where to find ASCON in production:
+  IoT protocols : Matter, Thread, OSCORE (CoAP/6LoWPAN)
+  Firmware      : STM32 + libsodium, ESP32-C3, nRF52840
+  Libraries     : ascon-c (C), ascon-rs (Rust), pyascon (Python)
+  TLS           : DTLS 1.3 with cipher suite TLS_ASCON_128A_SHA256
+
+Attack scenario — nonce misuse in production:
+  If an IoT device reboots and resets its nonce counter:
+  • The nonce repeats with the same key
+  • CT1 ⊕ CT2 = PT1 ⊕ PT2  (crib-dragging possible)
+  • With known protocol words → PT recoverable
+  Mitigation: high-resolution timestamp nonce or DRBG</div>
+        <div class="key-points">
+          <div class="key-point"><strong>DFIR analysis vector:</strong> When analyzing encrypted IoT traffic, identifying the ASCON variant (via the IV) lets you determine the rate size and security limits for each message.</div>
+          <div class="key-point"><strong>Hardening:</strong> In firmware audits, verify that nonces are not generated with an unseeded PRNG after reset. A predictable nonce generator breaks AEAD security.</div>
+        </div>
+
+        <!-- CTA final prominente EN -->
+        <div style="text-align:center;margin-top:1.2rem;padding:1.2rem;border:1px solid var(--accent-ascon-border);border-radius:12px;background:var(--accent-ascon-glow)">
+          <p style="color:var(--text);margin:0 0 .8rem;font-size:.95rem">Ready to see ASCON in action, step by step?</p>
+          <a href="ascon-demo.html" class="btn-ascon-primary" style="display:inline-block;text-decoration:none;padding:10px 24px;border-radius:8px">▶ Open Demo Lab</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ NAVEGACIÓN ══════════════════════════ -->
     <nav class="slide-nav" aria-label="Navegación de diapositivas">
-      <button class="slide-nav-btn" id="btn-prev" disabled onclick="changeSlide(-1)">← Anterior</button>
+      <button class="slide-nav-btn" id="btn-prev" disabled>
+        <span data-lang="es">← Anterior</span>
+        <span data-lang="en" hidden>← Previous</span>
+      </button>
       <div class="slide-dots" id="slide-dots" role="tablist"></div>
-      <button class="slide-nav-btn" id="btn-next" onclick="changeSlide(1)">Siguiente →</button>
+      <button class="slide-nav-btn" id="btn-next">
+        <span data-lang="es">Siguiente →</span>
+        <span data-lang="en" hidden>Next →</span>
+      </button>
     </nav>
 
-  </div>
+    <!-- Hint táctil (visible solo en móvil, desaparece al primer swipe) -->
+    <p id="swipe-hint" style="text-align:center;font-size:.75rem;color:var(--muted);margin-top:.5rem;opacity:.7">
+      <span data-lang="es">← Deslizá para navegar →</span>
+      <span data-lang="en" hidden>← Swipe to navigate →</span>
+    </p>
+
+  </div><!-- /slides-shell -->
 
   <script>
-    const TOTAL   = 8;
-    let current   = 1;
-    const dotsEl  = document.getElementById('slide-dots');
+    "use strict";
 
-    // Crear dots
+    const TOTAL  = 10;
+    let current  = 1;
+    const dotsEl = document.getElementById('slide-dots');
+
+    // ── Títulos de slides para aria-labels ────────────────────────
+    const SLIDE_TITLES = {
+      es: ['¿Qué es ASCON-128a?','Estado interno','S-box de 5 bits','Capa lineal','Permutaciones','Datos Asociados','Las 4 fases','Tag de autenticación','128 vs 128a','Mundo real / SOC'],
+      en: ['What is ASCON-128a?','Internal State','5-bit S-box','Linear Layer','Permutations','Associated Data','4 Phases','Authentication Tag','128 vs 128a','Real World / SOC']
+    };
+
+    // ── Crear dots ────────────────────────────────────────────────
     for (let i = 1; i <= TOTAL; i++) {
       const d = document.createElement('button');
-      d.className    = 'slide-dot' + (i === 1 ? ' active' : '');
-      d.setAttribute('aria-label', `Slide ${i}`);
+      d.className = 'slide-dot' + (i === 1 ? ' active' : '');
       d.setAttribute('role', 'tab');
+      d.setAttribute('aria-label', 'Slide ' + i);
       d.onclick = () => goTo(i);
       dotsEl.appendChild(d);
     }
 
+    // ── Navegar a slide N ─────────────────────────────────────────
     function goTo(n) {
-      document.getElementById(`slide-${current}`).classList.remove('active');
+      document.getElementById('slide-' + current).classList.remove('active');
       dotsEl.children[current - 1].classList.remove('active');
       current = Math.max(1, Math.min(TOTAL, n));
-      document.getElementById(`slide-${current}`).classList.add('active');
+      document.getElementById('slide-' + current).classList.add('active');
       dotsEl.children[current - 1].classList.add('active');
-      document.getElementById('btn-prev').disabled = current === 1;
-      const nextBtn = document.getElementById('btn-next');
-      if (current === TOTAL) {
-        nextBtn.textContent = '↩ Demo Lab';
+
+      document.getElementById('btn-prev').disabled = (current === 1);
+
+      const nextBtn  = document.getElementById('btn-next');
+      const lang     = getLangLocal();
+      const isLast   = (current === TOTAL);
+
+      // Actualizar número de slide
+      document.getElementById('slide-num').textContent =
+        String(current).padStart(2,'0') + ' / ' + String(TOTAL).padStart(2,'0');
+
+      if (isLast) {
+        nextBtn.disabled = false;
+        nextBtn.innerHTML = lang === 'en'
+          ? '<span data-lang="en">▶ Open Demo Lab</span>'
+          : '<span data-lang="es">▶ Abrir Demo Lab</span>';
         nextBtn.onclick = () => { window.location.href = 'ascon-demo.html'; };
       } else {
-        nextBtn.textContent = 'Siguiente →';
+        nextBtn.innerHTML = lang === 'en'
+          ? '<span data-lang="en">Next →</span>'
+          : '<span data-lang="es">Siguiente →</span>';
         nextBtn.onclick = () => changeSlide(1);
         nextBtn.disabled = false;
       }
+
+      // Actualizar aria-labels de dots
+      const titles = SLIDE_TITLES[lang] || SLIDE_TITLES.es;
+      Array.from(dotsEl.children).forEach((d, i) =>
+        d.setAttribute('aria-label', 'Slide ' + (i+1) + ': ' + (titles[i] || '')));
     }
 
     function changeSlide(dir) { goTo(current + dir); }
 
+    // ── Teclado ───────────────────────────────────────────────────
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
       if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
     });
-  </script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous" defer></script>
-  <script>
+    document.getElementById('btn-prev').onclick = () => changeSlide(-1);
+    document.getElementById('btn-next').onclick = () => changeSlide(1);
+
+    // ── Swipe táctil ─────────────────────────────────────────────
+    let touchStartX = null;
+    const shell = document.querySelector('.slides-shell');
+    shell.addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    shell.addEventListener('touchend', e => {
+      if (touchStartX === null) return;
+      const dx = e.changedTouches[0].screenX - touchStartX;
+      touchStartX = null;
+      if (Math.abs(dx) < 40) return; // umbral mínimo
+      changeSlide(dx < 0 ? 1 : -1);
+      // Ocultar hint después del primer swipe
+      const hint = document.getElementById('swipe-hint');
+      if (hint) hint.style.display = 'none';
+    }, { passive: true });
+
+    // ── Idioma ────────────────────────────────────────────────────
+    function getLangLocal() {
+      return window.SITE_LANG || localStorage.getItem('site-lang') || 'es';
+    }
+
+    function applyLangSlides(lang) {
+      // Pills header
+      document.querySelectorAll('[data-lang-pill]').forEach(b =>
+        b.setAttribute('aria-selected', String(b.dataset.langPill === lang)));
+      // Contenido data-lang
+      document.querySelectorAll('[data-lang]').forEach(el => {
+        el.hidden = el.dataset.lang !== lang;
+      });
+      // Actualizar doc lang
+      document.documentElement.lang = lang;
+      // Re-render botón next si es el último slide
+      goTo(current);
+    }
+
+    // Pills click
+    document.querySelectorAll('[data-lang-pill]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const lang = this.dataset.langPill;
+        if (typeof window.setLang === 'function') {
+          window.setLang(lang);
+        } else {
+          try { localStorage.setItem('site-lang', lang); } catch(e){}
+          applyLangSlides(lang);
+        }
+      });
+    });
+
+    // Escuchar cambios de i18n.js
+    window.addEventListener('langchange', () => applyLangSlides(getLangLocal()));
+
+    // ── KaTeX ─────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function() {
+      // Aplicar idioma guardado
+      applyLangSlides(getLangLocal());
+
+      // Render KaTeX
       if (typeof renderMathInElement === 'function') {
         renderMathInElement(document.body, {
           delimiters: [
-            {left: '$$', right: '$$', display: true},
-            {left: '\\(', right: '\\)', display: false}
+            { left: '$$', right: '$$', display: true },
+            { left: '\\(', right: '\\)', display: false }
           ],
           throwOnError: false
         });

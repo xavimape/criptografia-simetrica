@@ -59,6 +59,13 @@ function setVisibleAsconTabs(clickedTab) {
     guideOverlayOn = false;
   }
   renderTabState();
+  // Scroll suave cuando se muestra el panel Aprender
+  if (clickedTab === "learn" && guideOverlayOn) {
+    requestAnimationFrame(() => {
+      const el = document.querySelector("[data-ascon-panel='learn']");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 }
 
 // ── Sub-tabs de la sección Aprender ─────────────────────────────────────────
@@ -244,11 +251,17 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderKatExamples() {
     const el = document.getElementById('asconExamplesContent');
     if (!el) return;
+    const isEN = (window.SITE_LANG === 'en');
 
     const KEY_NONCE = '000102030405060708090A0B0C0D0E0F';
     const buildTable = (variant, list) => {
-      const label = variant === '128a' ? 'ASCON-128a' : 'ASCON-128';
-      const rows = list.map((v, i) =>
+      const label    = variant === '128a' ? 'ASCON-128a' : 'ASCON-128';
+      const btnLabel = isEN ? '▶ Lab'          : '▶ Práctica';
+      const thDesc   = isEN ? 'Description'    : 'Descripción';
+      const thCtExp  = isEN ? 'Expected CT'    : 'CT esperado';
+      const thTagExp = isEN ? 'Expected Tag'   : 'Tag esperado';
+      const keyLbl   = isEN ? 'Key and Nonce:' : 'Clave y Nonce:';
+      const rows = list.map((v) =>
         `<tr>
           <td style="padding:6px 10px;font-family:var(--mono);font-size:0.78rem">${v.label}</td>
           <td style="padding:6px 10px;font-family:var(--mono);font-size:0.76rem;color:var(--muted)">${v.ad || '—'}</td>
@@ -258,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <td style="padding:6px 10px">
             <button class="btn-ascon-primary" style="font-size:0.75rem;padding:4px 10px;white-space:nowrap"
               onclick="window.loadKatInPractica('${variant}', ${JSON.stringify(v).replace(/"/g, '&quot;')})">
-              ▶ Práctica
+              ${btnLabel}
             </button>
           </td>
         </tr>`
@@ -266,16 +279,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <h3 style="margin:1.2rem 0 0.5rem;color:var(--accent-ascon)">${label}</h3>
         <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.5rem">
-          Clave y Nonce: <code style="font-family:var(--mono)">${KEY_NONCE}</code>
+          ${keyLbl} <code style="font-family:var(--mono)">${KEY_NONCE}</code>
         </p>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
             <thead><tr style="border-bottom:1px solid var(--line)">
-              <th style="text-align:left;padding:6px 10px">Descripción</th>
+              <th style="text-align:left;padding:6px 10px">${thDesc}</th>
               <th style="text-align:left;padding:6px 10px">AD (hex)</th>
               <th style="text-align:left;padding:6px 10px">PT (hex)</th>
-              <th style="text-align:left;padding:6px 10px">CT esperado</th>
-              <th style="text-align:left;padding:6px 10px">Tag esperado</th>
+              <th style="text-align:left;padding:6px 10px">${thCtExp}</th>
+              <th style="text-align:left;padding:6px 10px">${thTagExp}</th>
               <th style="padding:6px 10px"></th>
             </thead>
             <tbody>${rows}</tbody>
@@ -283,13 +296,22 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>`;
     };
 
+    const introText = isEN
+      ? 'Known-Answer Test vectors from the official repository '
+      : 'Vectores Known-Answer Test del repositorio oficial ';
+    const clickText = isEN
+      ? 'Click <strong>▶ Lab</strong> to load the vector in the cipher and verify it step by step.'
+      : 'Hacé clic en <strong>▶ Práctica</strong> para cargar el vector en el cifrador y verificarlo paso a paso.';
+
     el.innerHTML =
-      '<p class="prose" style="margin-bottom:0.8rem">Vectores Known-Answer Test del repositorio oficial ' +
+      '<p class="prose" style="margin-bottom:0.8rem">' + introText +
       '<a href="https://github.com/ascon/ascon-c/tree/v1.2.8" target="_blank" rel="noopener">ascon/ascon-c@v1.2.8</a>. ' +
-      'Hacé clic en <strong>▶ Práctica</strong> para cargar el vector en el cifrador y verificarlo paso a paso.</p>' +
+      clickText + '</p>' +
       buildTable('128a', KAT_128A) +
       buildTable('128', KAT_128);
   }
 
   renderKatExamples();
+  /* Re-render on language change */
+  window.addEventListener('langchange', function() { renderKatExamples(); });
 });

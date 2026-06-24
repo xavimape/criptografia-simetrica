@@ -6,12 +6,12 @@
  */
 
 const TAB_LABELS = {
-  es: { studio: "Práctica", compare: "Comparar", learn: "Aprender", guide: "Guía", glossary: "Glosario" },
-  en: { studio: "Practice", compare: "Compare",  learn: "Learn",    guide: "Guide", glossary: "Glossary" }
+  es: { studio: "Práctica", compare: "Comparar", learn: "Aprender", guide: "Guía", glossary: "Glosario", nist: "Ejemplos NIST" },
+  en: { studio: "Practice", compare: "Compare",  learn: "Learn",    guide: "Guide", glossary: "Glossary",  nist: "NIST Examples" }
 };
 
 function getLang() {
-  return document.getElementById("langSelect")?.value === "en" ? "en" : "es";
+  return (window.SITE_LANG === "en") ? "en" : "es";
 }
 
 /**
@@ -28,6 +28,11 @@ function setVisibleTabs(activeTab) {
   if (activeTab === "learn") {
     const activeLearnTab = document.body.dataset.learnTab || "guide";
     setVisibleLearnTab(activeLearnTab);
+    // Scroll suave hacia la sección Aprender
+    requestAnimationFrame(() => {
+      const nav = document.querySelector(".learn-tabs");
+      if (nav) nav.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   // Actualizar estado activo de los botones de tab
@@ -46,12 +51,14 @@ function setVisibleLearnTab(activeLearnTab) {
 
   const guide    = document.querySelector(".guide");
   const glossary = document.querySelector(".glossary");
+  const nist     = document.querySelector(".nist-examples");
   const learnTabs = document.querySelector(".learn-tabs");
 
   // learn-tabs siempre visible cuando el panel learn está activo
   if (learnTabs) learnTabs.hidden = false;
   if (guide)    guide.hidden    = activeLearnTab !== "guide";
   if (glossary) glossary.hidden = activeLearnTab !== "glossary";
+  if (nist)     nist.hidden     = activeLearnTab !== "nist";
 
   // Actualizar botones learn
   document.querySelectorAll(".learn-btn").forEach((btn) => {
@@ -69,6 +76,7 @@ function syncTabLabels() {
     tabLearn:        labels.learn,
     learnGuideBtn:   labels.guide,
     learnGlossaryBtn: labels.glossary,
+    learnNistBtn:    labels.nist,
   };
   for (const [id, text] of Object.entries(map)) {
     const el = document.getElementById(id);
@@ -103,8 +111,8 @@ function initTabs() {
     });
   });
 
-  // Sincronizar etiquetas al cambiar idioma
-  document.getElementById("langSelect")?.addEventListener("change", () => {
+  // Sincronizar etiquetas al cambiar idioma (lang pills → langchange event)
+  window.addEventListener("langchange", () => {
     syncTabLabels();
   });
 }

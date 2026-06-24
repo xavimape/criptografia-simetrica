@@ -3,33 +3,56 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Teoria ChaCha20-Poly1305</title>
+  <meta name="description" content="Aprende ChaCha20-Poly1305 con slides interactivos: arquitectura ARX, quarter rounds, Poly1305 MAC, AEAD y análisis TLS/WireGuard para SOC." />
+  <meta property="og:title" content="Teoría ChaCha20-Poly1305" />
+  <meta property="og:description" content="Aprende ChaCha20-Poly1305 con slides interactivos: arquitectura ARX, quarter rounds, Poly1305 MAC, AEAD y análisis TLS/WireGuard para SOC." />
+  <meta property="og:type" content="website" />
+  <title>Teoría ChaCha20-Poly1305</title>
   <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="boton-dubstep.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous" />
+  <!-- theme-switcher SIN defer: aplica tema antes del primer paint -->
+  <script src="theme-switcher.js"></script>
   <script defer src="i18n.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 </head>
 <body>
 
 <div class="bg-grid" aria-hidden="true"></div>
-<div class="page-shell">
 
-  <header class="hero">
-    <div>
-      <a href="index.html" class="section-back">&larr; Inicio</a>
-      <div class="hero-badge" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3);color:var(--accent-chacha)">ChaCha20-Poly1305 &middot; RFC 8439</div>
-      <p class="eyebrow" style="color:var(--accent-chacha)">Teoria e internos</p>
-      <h1>Como funciona ChaCha20-Poly1305</h1>
-      <p class="hero-copy">8 diapositivas: desde el diseno ARX hasta el esquema AEAD completo.</p>
+<div class="slides-shell slides-shell--chacha">
+
+  <!-- ══════════════════════════ HEADER ══════════════════════════ -->
+  <header style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;padding:8px 0 20px;border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <a href="index.html" class="section-back">← Inicio</a>
+      <div class="hero-badge">ChaCha20-Poly1305 · RFC 8439 · Teoría</div>
+    </div>
+    <div class="hero-tools-v2">
+      <div>
+        <span class="ascon-mlabel" data-i18n="language">IDIOMA</span>
+        <div class="ci-tabs" data-lang-pill-container>
+          <button type="button" class="ci-tab" data-lang-pill="es" aria-selected="true">ES</button>
+          <button type="button" class="ci-tab" data-lang-pill="en"  aria-selected="false">EN</button>
+        </div>
+      </div>
+      <div>
+        <span class="ascon-mlabel" data-i18n="theme">TEMA</span>
+        <select class="ci-select" data-theme-select></select>
+      </div>
     </div>
   </header>
 
-  <main class="layout" style="grid-template-columns:1fr">
-
-    <!-- Slide 1 -->
-    <section class="card slide-card" style="border-left:3px solid var(--accent-chacha)">
-      <div class="slide-num" style="color:var(--accent-chacha)">01 / 08</div>
-      <h2>Que es ChaCha20-Poly1305?</h2>
-      <div class="slide-body">
+  <!-- ══════════════════════════ SLIDE 1 ══════════════════════════ -->
+  <section class="slide active" id="slide-1">
+    <div class="slide-header">
+      <span class="slide-num">01 / 08</span>
+      <h2>¿Qué es ChaCha20-Poly1305?</h2>
+    </div>
+    <div class="slide-body">
+      <div class="slide-text">
         <p>
           <strong>ChaCha20-Poly1305</strong> es un cifrado <em>AEAD</em>
           (Authenticated Encryption with Associated Data) estandarizado en el
@@ -41,11 +64,12 @@
         </ul>
         <p>
           Es el algoritmo predilecto cuando no hay hardware AES-NI disponible
-          (moviles, dispositivos embebidos). Lo usan <strong>TLS 1.3</strong>,
+          (móviles, dispositivos embebidos). Lo usan <strong>TLS 1.3</strong>,
           <strong>WireGuard</strong>, <strong>Signal</strong>, <strong>OpenSSH</strong>
-          y muchos mas.
+          y muchos más.
         </p>
-        <div class="diagram-box" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05)">
+      </div>
+      <div class="diagram-box">
 Key (256 bits) + Nonce (96 bits)
         |
         v
@@ -55,16 +79,32 @@ Key (256 bits) + Nonce (96 bits)
         |
    PT XOR KS  =  CT
         |
-   Poly1305(AD || CT)  =  Tag (128 bits)
+   Poly1305(AD || CT)  =  Tag (128 bits)</div>
+      <div class="key-points">
+        <div class="key-point">
+          <span class="key-point-icon">🔒</span>
+          <span><strong>AEAD completo:</strong> confidencialidad + autenticidad en una sola pasada. El tag verifica tanto el ciphertext como los datos asociados.</span>
+        </div>
+        <div class="key-point">
+          <span class="key-point-icon">📱</span>
+          <span><strong>Sin AES-NI:</strong> en dispositivos sin aceleración de hardware, ChaCha20 supera a AES-GCM en velocidad y resistencia a timing attacks.</span>
+        </div>
+        <div class="key-point">
+          <span class="key-point-icon">✅</span>
+          <span><strong>Estándar IETF:</strong> RFC 8439 (2018). Parte de TLS 1.3 (RFC 8446), WireGuard, Signal Protocol y OpenSSH desde v6.5.</span>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Slide 2 -->
-    <section class="card slide-card" style="border-left:3px solid var(--accent-chacha)">
-      <div class="slide-num" style="color:var(--accent-chacha)">02 / 08</div>
-      <h2>Diseno ARX: Add, Rotate, XOR</h2>
-      <div class="slide-body">
+  <!-- ══════════════════════════ SLIDE 2 ══════════════════════════ -->
+  <section class="slide" id="slide-2">
+    <div class="slide-header">
+      <span class="slide-num">02 / 08</span>
+      <h2>Diseño ARX: Add, Rotate, XOR</h2>
+    </div>
+    <div class="slide-body">
+      <div class="slide-text">
         <p>
           ChaCha20 usa <strong>solo tres operaciones</strong> sobre enteros de 32 bits:
         </p>
@@ -73,89 +113,114 @@ Key (256 bits) + Nonce (96 bits)
           \(a \leftarrow a \lll n\) &nbsp;&middot;&nbsp;
           \(a \leftarrow a \oplus b\)
         </p>
-        <div class="diagram-box" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05)">
-ADD    a = (a + b) mod 2^32      -- suma modular, sin carry
-ROTATE a = a &lt;&lt;&lt; n             -- rotacion izquierda de n bits
-XOR    a = a XOR b               -- or exclusivo
-        </div>
-        <p><strong>Por que ARX?</strong></p>
         <ul>
-          <li>Sin tablas S-Box: inmune a ataques de cache-timing</li>
+          <li><strong>¿Por qué ARX?</strong> Sin tablas S-Box: inmune a ataques de cache-timing</li>
           <li>Velocidad constante: sin ramas condicionales sobre datos secretos</li>
           <li>Eficiente en CPU de 32 bits (ARM Cortex-M, RISC-V)</li>
-          <li>Facil de implementar sin side-channels</li>
+          <li>Fácil de implementar sin side-channels</li>
         </ul>
         <p>
-          Disenado por <strong>Daniel J. Bernstein</strong> en 2008 como variante de Salsa20.
+          Diseñado por <strong>Daniel J. Bernstein</strong> en 2008 como variante de Salsa20.
           El nombre viene de <em>Cha</em>cha dance: las diagonales "bailan" respecto a las columnas.
         </p>
       </div>
-    </section>
+      <div class="diagram-box">
+ADD    a = (a + b) mod 2^32      -- suma modular, sin carry
+ROTATE a = a &lt;&lt;&lt; n             -- rotación izquierda de n bits
+XOR    a = a XOR b               -- or exclusivo</div>
+    </div>
+  </section>
 
-    <!-- Slide 3 -->
-    <section class="card slide-card" style="border-left:3px solid var(--accent-chacha)">
-      <div class="slide-num" style="color:var(--accent-chacha)">03 / 08</div>
-      <h2>Estado 4x4: la matriz de 512 bits</h2>
-      <div class="slide-body">
+  <!-- ══════════════════════════ SLIDE 3 ══════════════════════════ -->
+  <section class="slide" id="slide-3">
+    <div class="slide-header">
+      <span class="slide-num">03 / 08</span>
+      <h2>Estado 4×4: la matriz de 512 bits</h2>
+    </div>
+    <div class="slide-body">
+      <div class="slide-text">
         <p>
           El estado interno es una matriz <strong>4&times;4 de words de 32 bits</strong>
           (16 words = 512 bits totales), organizada en filas:
         </p>
-        <div class="diagram-box" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05)">
+      </div>
+      <div class="diagram-box">
  w0  w1  w2  w3   &lt;-- Constantes: "expand 32-byte k"
  w4  w5  w6  w7   &lt;-- Clave K[0..3]  (128 bits)
  w8  w9 w10 w11   &lt;-- Clave K[4..7]  (128 bits)
-w12 w13 w14 w15   &lt;-- Counter | Nonce[0..2]
+w12 w13 w14 w15   &lt;-- Counter | Nonce[0..2]</div>
+      <div class="key-points">
+        <div class="key-point">
+          <span class="key-point-icon">🔵</span>
+          <span><strong>Constantes</strong>: "expa", "nd 3", "2-by", "te k" en ASCII. Iguales para todos, no secretas — siguen la filosofía "nothing-up-my-sleeve".</span>
         </div>
-        <p>
-          <strong>Constantes</strong> (azul): "expa", "nd 3", "2-by", "te k" en ASCII &mdash;
-          iguales para todos, no secretas.<br/>
-          <strong>Clave</strong> (verde): 256 bits del usuario en little-endian.<br/>
-          <strong>Counter</strong> (naranja): empieza en 0 para derivar la clave Poly1305,
-          en 1 para cifrar. Permite acceso aleatorio a cualquier bloque de 64 bytes.<br/>
-          <strong>Nonce</strong>: 96 bits, unico por mensaje con la misma clave.
-        </p>
+        <div class="key-point">
+          <span class="key-point-icon">🟢</span>
+          <span><strong>Clave</strong>: 256 bits del usuario en little-endian. Ocupa las filas 1 y 2 completas.</span>
+        </div>
+        <div class="key-point">
+          <span class="key-point-icon">🟠</span>
+          <span><strong>Counter</strong>: empieza en 0 para derivar la clave Poly1305, en 1 para cifrar. Permite acceso aleatorio a cualquier bloque de 64 bytes.</span>
+        </div>
+        <div class="key-point">
+          <span class="key-point-icon">🔴</span>
+          <span><strong>Nonce</strong>: 96 bits, único por mensaje con la misma clave. Los restantes 3 words de fila 3.</span>
+        </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Slide 4 -->
-    <section class="card slide-card" style="border-left:3px solid var(--accent-chacha)">
-      <div class="slide-num" style="color:var(--accent-chacha)">04 / 08</div>
-      <h2>Quarter Round: la operacion fundamental</h2>
-      <div class="slide-body">
+  <!-- ══════════════════════════ SLIDE 4 ══════════════════════════ -->
+  <section class="slide" id="slide-4">
+    <div class="slide-header">
+      <span class="slide-num">04 / 08</span>
+      <h2>Quarter Round: la operación fundamental</h2>
+    </div>
+    <div class="slide-body">
+      <div class="slide-text">
         <p>
           El <strong>Quarter Round</strong> (QR) transforma 4 words (a, b, c, d)
           con 8 operaciones ARX:
         </p>
-        <div class="diagram-box" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05)">
-QUARTERROUND(a, b, c, d):
-  a += b;  d ^= a;  d &lt;&lt;&lt;= 16;
-  c += d;  b ^= c;  b &lt;&lt;&lt;= 12;
-  a += b;  d ^= a;  d &lt;&lt;&lt;=  8;
-  c += d;  b ^= c;  b &lt;&lt;&lt;=  7;
-        </div>
         <p>
-          En cada QR los 4 words se mezclan completamente entre si.
-          Las rotaciones (<strong>16, 12, 8, 7</strong>) estan elegidas para maxima
-          difusion en el menor numero de rondas (analisis de Aumasson et al.).
+          En cada QR los 4 words se mezclan completamente entre sí.
+          Las rotaciones (<strong>16, 12, 8, 7</strong>) están elegidas para máxima
+          difusión en el menor número de rondas (análisis de Aumasson et al.).
         </p>
         <p>
           <strong>Paralelismo:</strong> los 4 QR de cada ronda son independientes
           y pueden ejecutarse en paralelo (SIMD con SSE2/AVX2 da ~10 ciclos/byte).
         </p>
       </div>
-    </section>
+      <div class="diagram-box">
+QUARTERROUND(a, b, c, d):
+  a += b;  d ^= a;  d &lt;&lt;&lt;= 16;
+  c += d;  b ^= c;  b &lt;&lt;&lt;= 12;
+  a += b;  d ^= a;  d &lt;&lt;&lt;=  8;
+  c += d;  b ^= c;  b &lt;&lt;&lt;=  7;</div>
+    </div>
+  </section>
 
-    <!-- Slide 5 -->
-    <section class="card slide-card" style="border-left:3px solid var(--accent-chacha)">
-      <div class="slide-num" style="color:var(--accent-chacha)">05 / 08</div>
+  <!-- ══════════════════════════ SLIDE 5 ══════════════════════════ -->
+  <section class="slide" id="slide-5">
+    <div class="slide-header">
+      <span class="slide-num">05 / 08</span>
       <h2>Rondas: columnas y diagonales</h2>
-      <div class="slide-body">
+    </div>
+    <div class="slide-body">
+      <div class="slide-text">
         <p>
           ChaCha20 aplica <strong>20 rondas</strong> (10 double-rounds).
-          Cada double-round = ronda de columnas + ronda de diagonales:
+          Cada double-round = ronda de columnas + ronda de diagonales.
+          Al mezclar columnas <em>y luego</em> diagonales, cada word afecta a todas
+          las demás en 2 double-rounds. En 10 double-rounds la difusión es total.
         </p>
-        <div class="diagram-box" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05)">
+        <p>
+          Salsa20 usaba filas y columnas; ChaCha20 usa columnas y diagonales
+          para mayor resistencia con menos rondas.
+        </p>
+      </div>
+      <div class="diagram-box">
 COLUMNAS  (las 4 columnas de la matriz):
   QR(w0,  w4,  w8,  w12)
   QR(w1,  w5,  w9,  w13)
@@ -168,26 +233,29 @@ DIAGONALES  (las 4 diagonales desplazadas):
   QR(w2,  w7,  w8,  w13)  &lt;-- +2
   QR(w3,  w4,  w9,  w14)  &lt;-- +3
 
-x 10 = 20 rondas totales
-        </div>
-        <p>
-          Al mezclar columnas <em>y luego</em> diagonales, cada word afecta a todas
-          las demas en 2 double-rounds. En 10 double-rounds la difusion es total.
-          Salsa20 usaba filas y columnas; ChaCha20 usa columnas y diagonales
-          para mayor resistencia con menos rondas.
-        </p>
-      </div>
-    </section>
+x 10 = 20 rondas totales</div>
+    </div>
+  </section>
 
-    <!-- Slide 6 -->
-    <section class="card slide-card" style="border-left:3px solid var(--accent-chacha)">
-      <div class="slide-num" style="color:var(--accent-chacha)">06 / 08</div>
-      <h2>Generacion del keystream y cifrado</h2>
-      <div class="slide-body">
+  <!-- ══════════════════════════ SLIDE 6 ══════════════════════════ -->
+  <section class="slide" id="slide-6">
+    <div class="slide-header">
+      <span class="slide-num">06 / 08</span>
+      <h2>Generación del keystream y cifrado</h2>
+    </div>
+    <div class="slide-body">
+      <div class="slide-text">
         <p>
           Para producir el bloque <em>i</em> del keystream (64 bytes):
         </p>
-        <div class="diagram-box" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05)">
+        <p>
+          La suma final (paso 4) hace que la función sea <strong>no invertible</strong>:
+          aunque alguien obtenga el keystream, no puede recuperar el estado intermedio
+          para derivar la clave. El counter permite cifrar bloques en <strong>orden arbitrario</strong>
+          (acceso aleatorio), a diferencia de CBC o CTR con carry.
+        </p>
+      </div>
+      <div class="diagram-box">
 1. state = InitMatrix(key, nonce, counter=i)
 2. working = state
 3. for round in 1..20:
@@ -197,100 +265,222 @@ x 10 = 20 rondas totales
 5. return serialize_LE(keystream_block)
 
 Cifrado:
-  CT_i = PT_i XOR keystream_i
-        </div>
-        <p>
-          La suma final (paso 4) hace que la funcion sea <strong>no invertible</strong>:
-          aunque alguien obtenga el keystream, no puede recuperar el estado intermedio
-          para derivar la clave.<br/>
-          El counter permite cifrar bloques en <strong>orden arbitrario</strong>
-          (acceso aleatorio), a diferencia de CBC o CTR con carry.
-        </p>
-      </div>
-    </section>
+  CT_i = PT_i XOR keystream_i</div>
+    </div>
+  </section>
 
-    <!-- Slide 7 -->
-    <section class="card slide-card" style="border-left:3px solid var(--accent-chacha)">
-      <div class="slide-num" style="color:var(--accent-chacha)">07 / 08</div>
+  <!-- ══════════════════════════ SLIDE 7 ══════════════════════════ -->
+  <section class="slide" id="slide-7">
+    <div class="slide-header">
+      <span class="slide-num">07 / 08</span>
       <h2>Poly1305: el MAC de un solo uso</h2>
-      <div class="slide-body">
+    </div>
+    <div class="slide-body">
+      <div class="slide-text">
         <p>
-          Poly1305 evalua un polinomio sobre <strong>GF(2<sup>130</sup>&minus;5)</strong>,
+          Poly1305 evalúa un polinomio sobre <strong>GF(2<sup>130</sup>&minus;5)</strong>,
           un primo de Mersenne cercano a 2<sup>130</sup>:
         </p>
         <p style="text-align:center;padding:.4rem 0">
           $$acc_i = \bigl(acc_{i-1} + m_i + 2^{128}\bigr) \cdot r \pmod{2^{130} - 5}$$
           $$tag = (acc + s) \bmod 2^{128}$$
         </p>
-        <div class="diagram-box" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05)">
-Clave one-time: (r, s)  ambos de 16 bytes
-  r  = poly1305_key[0..15]  clamped a 106 bits efectivos
-  s  = poly1305_key[16..31] libre
-
-Mensaje = pad16(AD) || pad16(CT) || len(AD) || len(CT)
-
-acc = 0
-for each 16-byte block m_i:
-  acc = (acc + m_i + 2^128) * r  mod (2^130 - 5)
-tag = (acc + s) mod 2^128
-        </div>
         <p>
-          El valor <strong>(r, s)</strong> se deriva del <em>bloque 0</em> del keystream
-          (counter=0), garantizando que sea <strong>unico por mensaje</strong>.
-          Si se reutiliza (r,s) con dos mensajes distintos, un atacante puede recuperar r.
-          Poly1305 es seguro en el modelo UF-CMA cuando la clave es de un solo uso.
+          El valor <strong>(r, s) se derivam del primer bloque de keystream (contador = 0):
+          la clave de cifrado comienza en el bloque 1.</strong>
+          Esto garantiza que la clave Poly1305 cambia con cada nonce.
+        </p>
+        <p>
+          Poly1305 <strong>no es reutilizable</strong>: reusar la clave con un segundo mensaje permite recuperar la clave desde los MACs. Por eso el nonce DEBE ser único por (key, mensaje).
         </p>
       </div>
-    </section>
+      <div class="diagram-box">
+Derivación de clave Poly1305:
+  poly1305_key = ChaCha20_block(key, nonce, counter=0)[0..31]
+  r            = poly1305_key[0..15]  &amp; clamp_mask
+  s            = poly1305_key[16..31]
 
-    <!-- Slide 8 -->
-    <section class="card slide-card" style="border-left:3px solid var(--accent-chacha)">
-      <div class="slide-num" style="color:var(--accent-chacha)">08 / 08</div>
+Cálculo del tag (n bloques de mensaje):
+  acc = 0
+  para cada bloque m_i (16 bytes + bit de padding):
+    acc = (acc + m_i) * r  mod  (2^130 - 5)
+  tag = (acc + s)  mod  2^128</div>
+      <div class="key-points">
+        <div class="key-point">
+          <span class="key-point-icon">🎯</span>
+          <span><strong>Un solo uso:</strong> si un atacante obtiene dos tags generados con la misma (r, s), puede resolver las ecuaciones y recuperar r. La seguridad colapsa completamente.</span>
+        </div>
+        <div class="key-point">
+          <span class="key-point-icon">🔒</span>
+          <span><strong>Tag de 128 bits:</strong> la probabilidad de forgery es 2<sup>-106</sup> — prácticamente imposible de falsificar sin conocer la clave.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ SLIDE 8 ══════════════════════════ -->
+  <section class="slide" id="slide-8">
+    <div class="slide-header">
+      <span class="slide-num">08 / 09</span>
       <h2>Esquema AEAD completo</h2>
-      <div class="slide-body">
+    </div>
+    <div class="slide-body">
+      <div class="slide-text">
         <p>
-          El esquema <strong>AEAD</strong> garantiza confidencialidad <em>y</em> autenticidad:
+          ChaCha20-Poly1305 combina los dos componentes en un esquema <strong>AEAD</strong>:
+          cifra el plaintext con ChaCha20 y autentica el ciphertext + AAD con Poly1305,
+          todo derivando las claves del mismo nonce.
         </p>
-        <div class="diagram-box" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05)">
-Cifrado:
-  (r, s)         = ChaCha20Block(key, nonce, counter=0)[0..31]
-  CT             = ChaCha20(key, nonce, counter=1) XOR PT
-  tag            = Poly1305(r, s, AD, CT)
-  output         = CT || tag
+      </div>
+      <div class="diagram-box">
+Entradas:  key (256 bits) · nonce (96 bits) · plaintext · AAD
+
+1. poly1305_key = ChaCha20_block(key, nonce, ctr=0)
+2. ciphertext   = ChaCha20_encrypt(key, nonce, ctr=1, plaintext)
+3. mac_data     = pad(AAD) ‖ pad(ciphertext) ‖ len(AAD)_u64le ‖ len(CT)_u64le
+4. tag          = Poly1305(poly1305_key, mac_data)
+
+Salida:  ciphertext ‖ tag (128 bits)
 
 Descifrado:
-  (r, s)         = ChaCha20Block(key, nonce, counter=0)[0..31]
-  tag'           = Poly1305(r, s, AD, CT)
-  if tag' != tag: ABORT  -- rechazar sin descifrar
-  PT             = ChaCha20(key, nonce, counter=1) XOR CT
+  Si Poly1305(key, mac_data) ≠ tag → rechazar (timing-safe)
+  Si iguales → descifrar con ChaCha20</div>
+      <div class="key-points">
+        <div class="key-point">
+          <span class="key-point-icon">🌐</span>
+          <span><strong>RFC 8439:</strong> especificación oficial que reemplaza RFC 7539. Define exactamente el orden de los campos en mac_data y el padding a múltiplos de 16 bytes.</span>
         </div>
+        <div class="key-point">
+          <span class="key-point-icon">⚡</span>
+          <span><strong>Sin AES-NI:</strong> en CPUs ARM/RISC-V sin extensiones de hardware, ChaCha20-Poly1305 es 2-3× más rápido que AES-GCM. TLS 1.3 lo usa como suite preferida en móviles.</span>
+        </div>
+        <div class="key-point">
+          <span class="key-point-icon">🔄</span>
+          <span>Verificá el esquema completo en el <a href="chacha20-demo.html"><strong>Demo Lab</strong></a>: cargá el vector RFC 8439 y observá cada paso ARX.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ SLIDE 9 ══════════════════════════ -->
+  <section class="slide" id="slide-9">
+    <div class="slide-header">
+      <span class="slide-num">09 / 09</span>
+      <h2>ChaCha20-Poly1305 en el SOC y DFIR</h2>
+    </div>
+    <div class="slide-body">
+      <div class="slide-text">
         <p>
-          El AD (<em>Associated Data</em>) se autentica pero <strong>no</strong> se cifra
-          &mdash; util para cabeceras de red o ID de sesion.<br/>
-          <strong>Nonce nunca debe repetirse</strong> con la misma clave: aunque no
-          rompe la confidencialidad como en AES-GCM, compromete la autenticidad.<br/>
-          Limite: <strong>2<sup>32</sup>&times;64 bytes = 256 GiB</strong> por nonce.
+          ChaCha20-Poly1305 aparece en tráfico moderno como la alternativa preferida a AES-GCM.
+          Identificarlo en captures, logs TLS y configuraciones es una habilidad operacional clave.
         </p>
       </div>
-    </section>
+      <div class="diagram-box">
+── Identificar ChaCha20 en Wireshark ───────────────────────
+TLS_CHACHA20_POLY1305_SHA256  →  cipher suite 0x1303
+JA3 client fingerprint incluye 0x1303 en el campo ciphers
+ServerHello con 0x1303 = servidor eligió ChaCha20
 
-  </main>
-</div>
+── WireGuard (UDP 51820) ────────────────────────────────────
+Handshake init:    148 bytes  →  Msg Type 1
+Handshake resp:    92 bytes   →  Msg Type 2
+Transport data:    32 + N bytes (N = plaintext + 16-byte tag)
+No SNI, no PKI — solo clave pública Curve25519
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous" defer></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof renderMathInElement === 'function') {
-        renderMathInElement(document.body, {
-          delimiters: [
-            {left: '$$', right: '$$', display: true},
-            {left: '\\(', right: '\\)', display: false}
-          ],
-          throwOnError: false
-        });
-      }
+── Nonce reuse en QUIC ──────────────────────────────────────
+QUIC usa packet number como nonce (incrementado por paquete)
+Si se resetea el packet counter → mismo nonce, misma clave
+CT1 XOR CT2 = PT1 XOR PT2  →  confidencialidad rota</div>
+      <div class="key-points">
+        <div class="key-point">
+          <span class="key-point-icon">📡</span>
+          <span><strong>JA3 fingerprinting:</strong> el hash JA3 incluye las cipher suites ofrecidas por el cliente. Un cliente con solo 0x1303 (ChaCha20) puede ser una herramienta custom, bot o cliente no estándar — útil para threat hunting.</span>
+        </div>
+        <div class="key-point">
+          <span class="key-point-icon">🔒</span>
+          <span><strong>Detección WireGuard:</strong> sin SNI ni certificados. Detectar por: puerto 51820/UDP, tamaño constante del handshake (148 bytes), baja latencia. Muchos EDRs y NGFWs lo identifican via DPI.</span>
+        </div>
+        <div class="key-point">
+          <span class="key-point-icon">⚠️</span>
+          <span><strong>Nonce reuse en QUIC:</strong> QUIC usa ChaCha20-Poly1305. Una implementación mal configurada que repita nonces rompe la confidencialidad. Monitorear los packet number fields en capturas QUIC.</span>
+        </div>
+        <div class="key-point">
+          <span class="key-point-icon">🌀</span>
+          <span>Probá el keystream y el AEAD completo en el <a href="chacha20-demo.html"><strong>Demo Lab ChaCha20</strong></a>.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ NAV ══════════════════════════ -->
+  <nav class="slide-nav" aria-label="Navegación de slides">
+    <button class="slide-nav-btn" id="prevBtn" disabled aria-label="Slide anterior">&#8592;</button>
+    <div class="slide-dots" id="slideDots" aria-hidden="true"></div>
+    <button class="slide-nav-btn" id="nextBtn" aria-label="Slide siguiente">&#8594;</button>
+  </nav>
+
+</div><!-- /.slides-shell -->
+
+<script>
+(function() {
+  'use strict';
+  var TOTAL = 9;
+  var cur = 1;
+  var slides = Array.from(document.querySelectorAll('.slide'));
+  var dots   = [];
+
+  function buildDots() {
+    var container = document.getElementById('slideDots');
+    if (!container) return;
+    for (var i = 1; i <= TOTAL; i++) {
+      var d = document.createElement('button');
+      d.className = 'slide-dot' + (i === 1 ? ' active' : '');
+      d.setAttribute('aria-label', 'Slide ' + i);
+      d.dataset.n = i;
+      d.addEventListener('click', function() { goTo(+this.dataset.n); });
+      container.appendChild(d);
+      dots.push(d);
+    }
+  }
+
+  function goTo(n) {
+    n = Math.max(1, Math.min(TOTAL, n));
+    slides.forEach(function(s) {
+      var on = s.id === 'slide-' + n;
+      s.classList.toggle('active', on);
+      s.setAttribute('aria-hidden', on ? 'false' : 'true');
+      if (on) s.setAttribute('aria-current', 'step');
+      else s.removeAttribute('aria-current');
     });
-  </script>
+    dots.forEach(function(d, i) {
+      d.classList.toggle('active', i + 1 === n);
+    });
+    document.getElementById('prevBtn').disabled = n <= 1;
+    document.getElementById('nextBtn').disabled = n >= TOTAL;
+    cur = n;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    buildDots();
+    goTo(1);
+    document.getElementById('prevBtn').addEventListener('click', function() { goTo(cur - 1); });
+    document.getElementById('nextBtn').addEventListener('click', function() {
+      if (cur >= TOTAL) { window.location.href = 'chacha20-demo.html'; return; }
+      goTo(cur + 1);
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowRight') goTo(cur + 1);
+      if (e.key === 'ArrowLeft')  goTo(cur - 1);
+    });
+    var sx = 0;
+    document.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener('touchend', function(e) {
+      var dx = sx - e.changedTouches[0].clientX;
+      if (Math.abs(dx) > 40) goTo(dx > 0 ? cur + 1 : cur - 1);
+    });
+  });
+}());
+</script>
+
 </body>
 </html>

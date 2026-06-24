@@ -788,6 +788,17 @@ function wireEvents() {
   $("exportBtn").addEventListener("click", exportJSON);
 }
 
+/* Sync language when i18n.js pills are clicked.
+   applyLanguage() is not called here because some elements it tries to set
+   don't exist on this page — PAGES['aes-demo'] in i18n.js handles the static
+   labels, and t() in dynamic renders reads state.lang directly. */
+window.addEventListener('langchange', function (e) {
+  var newLang = (e.detail && e.detail.lang) || 'es';
+  if (newLang !== state.lang) {
+    state.lang = newLang;
+  }
+});
+
 async function init() {
   await loadExternalTranslations();
   initDefaults();

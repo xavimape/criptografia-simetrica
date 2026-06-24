@@ -534,57 +534,213 @@ var HASH_GUIDE = [
   {
     title: { es: '¿Qué es una función hash?', en: 'What is a hash function?' },
     content: {
-      es: 'Una función hash toma una entrada de longitud arbitraria y produce una salida de longitud fija llamada <strong>digest</strong>. Es <em>determinista</em>: la misma entrada siempre produce el mismo hash. Es <em>unidireccional</em>: no es posible obtener la entrada a partir del digest.',
-      en: 'A hash function takes an input of arbitrary length and produces a fixed-length output called a <strong>digest</strong>. It is <em>deterministic</em>: the same input always produces the same hash. It is <em>one-way</em>: it is not feasible to recover the input from the digest.'
+      es: `<p>Una función hash toma una entrada de longitud arbitraria y produce una salida de longitud fija llamada <strong>digest</strong>.</p>
+<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Determinista</span>Misma entrada → mismo hash siempre</div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Unidireccional</span>No es posible obtener la entrada a partir del digest</div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Longitud fija</span>Salida de tamaño constante independiente del input</div>
+</div>
+<div class="hg-mono">"hello" → SHA-256 → <span style="color:var(--accent-hash)">2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824</span></div>
+<p style="margin-top:8px">La función hash <em>no es cifrado</em>: no hay clave y no se puede revertir. Es una <strong>huella digital</strong> del contenido.</p>`,
+      en: `<p>A hash function takes an input of arbitrary length and produces a fixed-length output called a <strong>digest</strong>.</p>
+<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Deterministic</span>Same input → same hash always</div>
+  <div class="hg-fact"><span class="hg-fact-lbl">One-way</span>Cannot recover input from the digest</div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Fixed length</span>Constant-size output regardless of input length</div>
+</div>
+<div class="hg-mono">"hello" → SHA-256 → <span style="color:var(--accent-hash)">2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824</span></div>
+<p style="margin-top:8px">A hash function is <em>not encryption</em>: there is no key and it cannot be reversed. It is a <strong>fingerprint</strong> of the content.</p>`
     }
   },
   {
     title: { es: 'Propiedades de seguridad', en: 'Security properties' },
     content: {
-      es: '<strong>Resistencia a preimagen:</strong> dado H no es posible encontrar M tal que hash(M)=H.<br><strong>Resistencia a segunda preimagen:</strong> dado M₁ no es posible encontrar M₂≠M₁ con el mismo hash.<br><strong>Resistencia a colisiones:</strong> no es posible encontrar ningún par M₁≠M₂ con el mismo hash.<br><strong>Efecto avalancha:</strong> 1 bit de diferencia en la entrada cambia ~50% del digest.',
-      en: '<strong>Preimage resistance:</strong> given H it is not feasible to find M such that hash(M)=H.<br><strong>Second preimage resistance:</strong> given M₁ it is not feasible to find M₂≠M₁ with the same hash.<br><strong>Collision resistance:</strong> it is not feasible to find any pair M₁≠M₂ with the same hash.<br><strong>Avalanche effect:</strong> a 1-bit input change flips ~50% of the digest bits.'
+      es: `<ul class="hg-ul">
+  <li><strong>Resistencia a preimagen:</strong> dado H, computacionalmente inviable encontrar M tal que hash(M)=H. Propiedad fundamental — sin ella cualquiera podría forjar mensajes.</li>
+  <li><strong>Resistencia a 2ª preimagen:</strong> dado M₁, inviable encontrar M₂≠M₁ con hash(M₁)=hash(M₂). Impide sustituir un documento por otro con el mismo hash.</li>
+  <li><strong>Resistencia a colisiones:</strong> inviable encontrar <em>cualquier</em> par M₁≠M₂ con el mismo hash. MD5 y SHA-1 ya fallaron aquí.</li>
+</ul>
+<div class="hg-callout">
+  <span class="hg-callout-icon">🌊</span>
+  <div><strong>Efecto avalancha:</strong> 1 bit de diferencia en la entrada cambia ~50% de los bits del digest. Probalo en la pestaña <strong>Avalancha</strong>.</div>
+</div>`,
+      en: `<ul class="hg-ul">
+  <li><strong>Preimage resistance:</strong> given H, computationally infeasible to find M such that hash(M)=H. Core property — without it anyone could forge messages.</li>
+  <li><strong>Second preimage resistance:</strong> given M₁, infeasible to find M₂≠M₁ with hash(M₁)=hash(M₂). Prevents substituting a document with another having the same hash.</li>
+  <li><strong>Collision resistance:</strong> infeasible to find <em>any</em> pair M₁≠M₂ with the same hash. MD5 and SHA-1 already failed here.</li>
+</ul>
+<div class="hg-callout">
+  <span class="hg-callout-icon">🌊</span>
+  <div><strong>Avalanche effect:</strong> a 1-bit input change flips ~50% of digest bits. Try it in the <strong>Avalanche</strong> tab.</div>
+</div>`
     }
   },
   {
     title: { es: 'MD5 — Merkle-Damgård (roto)', en: 'MD5 — Merkle-Damgård (broken)' },
     content: {
-      es: 'MD5 produce un digest de <strong>128 bits</strong> (32 hex). Divide el mensaje en bloques de 512 bits y aplica 4 rondas de 16 operaciones sobre un estado de cuatro palabras de 32 bits (A, B, C, D). <strong>Criptográficamente roto</strong>: colisiones encontrables en segundos en hardware convencional. No usar para seguridad. Aún aparece en logs de malware y como identificador en bases de TI.',
-      en: 'MD5 produces a <strong>128-bit</strong> digest (32 hex chars). Splits the message into 512-bit blocks and applies 4 rounds of 16 operations on a state of four 32-bit words (A, B, C, D). <strong>Cryptographically broken</strong>: collisions findable in seconds on commodity hardware. Do not use for security. Still appears in malware logs and IT asset databases.'
+      es: `<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Digest</span><code>128 bits · 32 hex</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Bloques</span><code>512 bits</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Estado</span><code>A B C D (4×32 bits)</code></div>
+  <div class="hg-fact hg-fact--danger"><span class="hg-fact-lbl">Estado</span>⚠ Roto</div>
+</div>
+<p>4 rondas de 16 operaciones sobre las palabras A, B, C, D. Colisiones MD5 encontrables en <strong>segundos</strong> en hardware convencional (hashcat, md5collgen).</p>
+<div class="hg-callout hg-callout--warn">
+  <span class="hg-callout-icon">⚠️</span>
+  <div><strong>No usar para seguridad.</strong> Todavía aparece en logs de malware, bases TI legacy y como identificador de archivo — válido solo como checksum no-adversarial.</div>
+</div>`,
+      en: `<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Digest</span><code>128 bits · 32 hex</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Blocks</span><code>512 bits</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">State</span><code>A B C D (4×32 bits)</code></div>
+  <div class="hg-fact hg-fact--danger"><span class="hg-fact-lbl">Security</span>⚠ Broken</div>
+</div>
+<p>4 rounds of 16 operations on words A, B, C, D. MD5 collisions findable in <strong>seconds</strong> on commodity hardware (hashcat, md5collgen).</p>
+<div class="hg-callout hg-callout--warn">
+  <span class="hg-callout-icon">⚠️</span>
+  <div><strong>Do not use for security.</strong> Still appears in malware logs, legacy IT databases, and as file identifiers — valid only as a non-adversarial checksum.</div>
+</div>`
     }
   },
   {
     title: { es: 'SHA-1 — obsoleto', en: 'SHA-1 — obsolete' },
     content: {
-      es: 'SHA-1 produce un digest de <strong>160 bits</strong> (40 hex). Merkle-Damgård con bloques de 512 bits, 80 rondas, estado de 5 palabras de 32 bits. <strong>Colisiones demostradas</strong> (SHAttered, 2017). Prohibido para firmas digitales (NIST SP 800-131A). Todavía aparece en Git (migración a SHA-256 en curso), certificados legacy y algunos protocolos IoT. Su presencia en TLS es indicador de configuración débil.',
-      en: 'SHA-1 produces a <strong>160-bit</strong> digest (40 hex chars). Merkle-Damgård with 512-bit blocks, 80 rounds, five 32-bit state words. <strong>Collisions demonstrated</strong> (SHAttered, 2017). Prohibited for digital signatures (NIST SP 800-131A). Still appears in Git (SHA-256 migration in progress), legacy certificates, and some IoT protocols. Its presence in TLS is an indicator of weak configuration.'
+      es: `<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Digest</span><code>160 bits · 40 hex</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Rondas</span><code>80</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Estado</span><code>H0–H4 (5×32 bits)</code></div>
+  <div class="hg-fact hg-fact--danger"><span class="hg-fact-lbl">Estado</span>⚠ Obsoleto</div>
+</div>
+<p><strong>Colisiones demostradas</strong> — ataque SHAttered (Google, 2017): dos PDFs con contenido distinto y el mismo SHA-1. Costo estimado: ~$110k en cloud en 2017.</p>
+<ul class="hg-ul">
+  <li>Prohibido para firmas digitales (NIST SP 800-131A desde 2014).</li>
+  <li>Git migra a SHA-256 pero la mayor parte del historial existente usa SHA-1.</li>
+  <li>Presencia en TLS = finding de hardening (SSLLabs / testssl.sh lo detecta).</li>
+</ul>`,
+      en: `<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Digest</span><code>160 bits · 40 hex</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Rounds</span><code>80</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">State</span><code>H0–H4 (5×32 bits)</code></div>
+  <div class="hg-fact hg-fact--danger"><span class="hg-fact-lbl">Security</span>⚠ Obsolete</div>
+</div>
+<p><strong>Collisions demonstrated</strong> — SHAttered attack (Google, 2017): two PDFs with different content sharing the same SHA-1. Estimated cost: ~$110k in cloud in 2017.</p>
+<ul class="hg-ul">
+  <li>Prohibited for digital signatures (NIST SP 800-131A since 2014).</li>
+  <li>Git is migrating to SHA-256 but most existing history uses SHA-1.</li>
+  <li>Presence in TLS = hardening finding (SSLLabs / testssl.sh detects it).</li>
+</ul>`
     }
   },
   {
     title: { es: 'SHA-256 — estándar actual', en: 'SHA-256 — current standard' },
     content: {
-      es: 'SHA-256 produce un digest de <strong>256 bits</strong> (64 hex). Familia SHA-2, Merkle-Damgård con bloques de 512 bits, 64 rondas, ocho palabras de 32 bits. Constantes derivadas de raíces cuadradas y cúbicas de primos. <strong>Actualmente seguro</strong>. Usado en TLS 1.3, firmas X.509, Bitcoin, HMAC, cadena de custodia DFIR e IOCs de malware.',
-      en: 'SHA-256 produces a <strong>256-bit</strong> digest (64 hex chars). SHA-2 family, Merkle-Damgård with 512-bit blocks, 64 rounds, eight 32-bit state words. Constants from square and cube roots of primes. <strong>Currently secure</strong>. Used in TLS 1.3, X.509 signatures, Bitcoin, HMAC, DFIR chain of custody, and malware IOCs.'
+      es: `<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Digest</span><code>256 bits · 64 hex</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Rondas</span><code>64</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Estado</span><code>H0–H7 (8×32 bits)</code></div>
+  <div class="hg-fact hg-fact--ok"><span class="hg-fact-lbl">Estado</span>✓ Seguro</div>
+</div>
+<p>Familia SHA-2. Las constantes K₀–K₆₃ se derivan de las raíces cúbicas de los primeros 64 primos; H₀–H₇ de las raíces cuadradas de los primeros 8 primos.</p>
+<div class="hg-mono">padding + bloques de 512 bits → 64 rondas sobre H0-H7 → digest</div>
+<ul class="hg-ul">
+  <li>TLS 1.3, firmas X.509, Bitcoin (doble SHA-256), HMAC-SHA256.</li>
+  <li>IOC estándar en VirusTotal, MISP, OpenCTI: <code>sha256:44d88612...</code></li>
+  <li>Cadena de custodia DFIR: <code>sha256sum evidence.dd > evidence.sha256</code></li>
+</ul>`,
+      en: `<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Digest</span><code>256 bits · 64 hex</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Rounds</span><code>64</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">State</span><code>H0–H7 (8×32 bits)</code></div>
+  <div class="hg-fact hg-fact--ok"><span class="hg-fact-lbl">Status</span>✓ Secure</div>
+</div>
+<p>SHA-2 family. Constants K₀–K₆₃ derived from cube roots of first 64 primes; H₀–H₇ from square roots of first 8 primes.</p>
+<div class="hg-mono">padding + 512-bit blocks → 64 rounds over H0-H7 → digest</div>
+<ul class="hg-ul">
+  <li>TLS 1.3, X.509 signatures, Bitcoin (double SHA-256), HMAC-SHA256.</li>
+  <li>Standard IOC in VirusTotal, MISP, OpenCTI: <code>sha256:44d88612...</code></li>
+  <li>DFIR chain of custody: <code>sha256sum evidence.dd > evidence.sha256</code></li>
+</ul>`
     }
   },
   {
-    title: { es: 'SHA-3 / Keccak — esponja', en: 'SHA-3 / Keccak — sponge' },
+    title: { es: 'SHA-3 / Keccak — construcción esponja', en: 'SHA-3 / Keccak — sponge construction' },
     content: {
-      es: 'SHA-3 usa una <strong>construcción esponja</strong>. Opera sobre un estado de 1600 bits (5×5 de lanes 64-bit). Fase <em>absorb</em>: XOR del mensaje en los primeros 136 bytes del estado + permutación Keccak-f. Fase <em>squeeze</em>: extrae 256 bits de los primeros 4 lanes. Ventaja clave: <strong>resistente a length-extension attacks</strong> (SHA-2 no lo es sin HMAC).',
-      en: 'SHA-3 uses a <strong>sponge construction</strong>. Operates on a 1600-bit state (5×5 matrix of 64-bit lanes). <em>Absorb</em> phase: XOR message into the first 136 bytes of state + Keccak-f permutation. <em>Squeeze</em> phase: extract 256 bits from the first 4 lanes. Key advantage: <strong>resistant to length-extension attacks</strong> (SHA-2 is not without HMAC).'
+      es: `<p>SHA-3 usa una <strong>construcción esponja</strong>, arquitectura fundamentalmente diferente a Merkle-Damgård. Estado de <strong>1600 bits</strong> (matriz 5×5 de lanes de 64 bits).</p>
+<div class="hg-mono">Absorb: estado[0..136 bytes] ⊕ bloque_mensaje → permutación Keccak-f[1600]
+Squeeze: extrae los primeros 256 bits del estado</div>
+<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Rate (r)</span><code>1088 bits (136 bytes)</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Capacity (c)</span><code>512 bits</code></div>
+  <div class="hg-fact hg-fact--ok"><span class="hg-fact-lbl">Ventaja</span>Resistente a length-extension</div>
+</div>
+<div class="hg-callout">
+  <span class="hg-callout-icon">🛡️</span>
+  <div><strong>Length-extension attack:</strong> SHA-256 sin HMAC es vulnerable — un atacante con H(M) puede calcular H(M‖ext) sin conocer M. SHA-3 es inmune por diseño.</div>
+</div>`,
+      en: `<p>SHA-3 uses a <strong>sponge construction</strong>, fundamentally different from Merkle-Damgård. State of <strong>1600 bits</strong> (5×5 matrix of 64-bit lanes).</p>
+<div class="hg-mono">Absorb: state[0..136 bytes] ⊕ message_block → Keccak-f[1600] permutation
+Squeeze: extract the first 256 bits of state</div>
+<div class="hg-fact-row">
+  <div class="hg-fact"><span class="hg-fact-lbl">Rate (r)</span><code>1088 bits (136 bytes)</code></div>
+  <div class="hg-fact"><span class="hg-fact-lbl">Capacity (c)</span><code>512 bits</code></div>
+  <div class="hg-fact hg-fact--ok"><span class="hg-fact-lbl">Advantage</span>Length-extension resistant</div>
+</div>
+<div class="hg-callout">
+  <span class="hg-callout-icon">🛡️</span>
+  <div><strong>Length-extension attack:</strong> SHA-256 without HMAC is vulnerable — an attacker with H(M) can compute H(M‖ext) without knowing M. SHA-3 is immune by design.</div>
+</div>`
     }
   },
   {
     title: { es: 'HMAC — autenticación con hash', en: 'HMAC — hash-based authentication' },
     content: {
-      es: '<strong>HMAC(K,M) = H((K⊕opad) ‖ H((K⊕ipad) ‖ M))</strong>. Combina una clave secreta con la función hash para producir un <strong>MAC</strong>. Autentica origen e integridad. Usado en JWT (HS256), TLS 1.2 PRF, IPsec, TOTP/HOTP, SSH. En TLS 1.3 fue reemplazado por HKDF para derivación de claves.',
-      en: '<strong>HMAC(K,M) = H((K⊕opad) ‖ H((K⊕ipad) ‖ M))</strong>. Combines a secret key with a hash function to produce a <strong>MAC</strong>. Authenticates both origin and integrity. Used in JWT (HS256), TLS 1.2 PRF, IPsec, TOTP/HOTP, SSH. In TLS 1.3 it was replaced by HKDF for key derivation.'
+      es: `<div class="hg-mono">HMAC(K, M) = H( (K ⊕ opad) ‖ H( (K ⊕ ipad) ‖ M ) )
+
+ipad = 0x36 × blocklen   opad = 0x5c × blocklen</div>
+<p>Combina una clave secreta con la función hash para producir un <strong>MAC</strong> (código de autenticación). Autentica <em>origen</em> e <em>integridad</em> a la vez.</p>
+<ul class="hg-ul">
+  <li><strong>JWT (HS256):</strong> Header.Payload.<code>HMAC-SHA256(header+"."+payload, secret)</code>. Secret débil → crackeable con hashcat offline.</li>
+  <li><strong>TLS 1.2 PRF:</strong> derivación de claves de sesión usando HMAC-SHA256.</li>
+  <li><strong>TOTP/HOTP:</strong> OTP basada en HMAC — cada código de 6 dígitos es HMAC-SHA1 truncado.</li>
+  <li><strong>IPsec / SSH:</strong> integridad de paquetes con HMAC-SHA256 o HMAC-SHA384.</li>
+</ul>
+<div class="hg-callout">
+  <span class="hg-callout-icon">🔑</span>
+  <div>En TLS 1.3, HMAC fue reemplazado por <strong>HKDF</strong> para derivación de claves — más moderno y seguro.</div>
+</div>`,
+      en: `<div class="hg-mono">HMAC(K, M) = H( (K ⊕ opad) ‖ H( (K ⊕ ipad) ‖ M ) )
+
+ipad = 0x36 × blocklen   opad = 0x5c × blocklen</div>
+<p>Combines a secret key with a hash function to produce a <strong>MAC</strong> (message authentication code). Authenticates both <em>origin</em> and <em>integrity</em>.</p>
+<ul class="hg-ul">
+  <li><strong>JWT (HS256):</strong> Header.Payload.<code>HMAC-SHA256(header+"."+payload, secret)</code>. Weak secret → crackable with hashcat offline.</li>
+  <li><strong>TLS 1.2 PRF:</strong> session key derivation using HMAC-SHA256.</li>
+  <li><strong>TOTP/HOTP:</strong> OTP based on HMAC — each 6-digit code is truncated HMAC-SHA1.</li>
+  <li><strong>IPsec / SSH:</strong> packet integrity with HMAC-SHA256 or HMAC-SHA384.</li>
+</ul>
+<div class="hg-callout">
+  <span class="hg-callout-icon">🔑</span>
+  <div>In TLS 1.3, HMAC was replaced by <strong>HKDF</strong> for key derivation — more modern and secure.</div>
+</div>`
     }
   },
   {
     title: { es: 'Hashing en ciberseguridad operativa', en: 'Hashing in operational cybersecurity' },
     content: {
-      es: '<strong>Threat Intel:</strong> IOCs de malware son hashes MD5/SHA-1/SHA-256 de archivos maliciosos.<br><strong>DFIR:</strong> integridad de evidencia con SHA-256 (cadena de custodia digital).<br><strong>SOC/SIEM:</strong> detección de archivos por hash en reglas Sigma/Suricata y EDR.<br><strong>TLS:</strong> la cipher suite incluye el algoritmo hash (ej. TLS_AES_256_GCM_<strong>SHA384</strong>).<br><strong>Passwords:</strong> bcrypt/Argon2 son KDFs basados en hash con cost factor — nunca MD5/SHA-256 sin salt+KDF.',
-      en: '<strong>Threat Intel:</strong> malware IOCs are MD5/SHA-1/SHA-256 hashes of malicious files.<br><strong>DFIR:</strong> evidence integrity via SHA-256 (digital chain of custody).<br><strong>SOC/SIEM:</strong> file detection by hash in Sigma/Suricata rules and EDR.<br><strong>TLS:</strong> cipher suite includes the hash algorithm (e.g. TLS_AES_256_GCM_<strong>SHA384</strong>).<br><strong>Passwords:</strong> bcrypt/Argon2 are hash-based KDFs with cost factor — never MD5/SHA-256 without salt+KDF.'
+      es: `<ul class="hg-ul">
+  <li><strong>Threat Intel / IOCs:</strong> VirusTotal, MISP y OpenCTI usan SHA-256 como identificador primario de archivo. MD5 y SHA-1 todavía aparecen en reportes legacy. Un hash SHA-256 en una regla Sigma detecta procesos exactos.</li>
+  <li><strong>DFIR — cadena de custodia:</strong> <code>sha256sum evidence.dd > evidence.sha256</code> antes de cualquier análisis. FTK Imager y Autopsy generan el hash al adquirir. Un hash distinto invalida la evidencia en sede judicial.</li>
+  <li><strong>Passwords:</strong> nunca almacenar MD5(password) o SHA-256(password). Usar <strong>bcrypt / Argon2 / scrypt</strong> — KDFs con cost factor y salt. NTLM usa MD4 (similar a MD5) — objetivo frecuente de Pass-the-Hash.</li>
+  <li><strong>TLS:</strong> la cipher suite incluye el hash (<code>TLS_AES_256_GCM_<strong>SHA384</strong></code>). Su presencia en SIEM identifica el nivel de seguridad de la sesión.</li>
+  <li><strong>Imphash:</strong> hash de la Import Address Table de un PE — permite agrupar malware de la misma familia aunque el contenido haya cambiado.</li>
+</ul>`,
+      en: `<ul class="hg-ul">
+  <li><strong>Threat Intel / IOCs:</strong> VirusTotal, MISP, and OpenCTI use SHA-256 as the primary file identifier. MD5 and SHA-1 still appear in legacy reports. A SHA-256 in a Sigma rule detects exact processes.</li>
+  <li><strong>DFIR — chain of custody:</strong> <code>sha256sum evidence.dd > evidence.sha256</code> before any analysis. FTK Imager and Autopsy generate the hash on acquisition. A different hash invalidates evidence in court.</li>
+  <li><strong>Passwords:</strong> never store MD5(password) or SHA-256(password). Use <strong>bcrypt / Argon2 / scrypt</strong> — KDFs with cost factor and salt. NTLM uses MD4 (similar to MD5) — frequent target for Pass-the-Hash.</li>
+  <li><strong>TLS:</strong> cipher suite includes the hash (<code>TLS_AES_256_GCM_<strong>SHA384</strong></code>). Its presence in SIEM identifies the session's security level.</li>
+  <li><strong>Imphash:</strong> hash of a PE's Import Address Table — enables grouping malware from the same family even when content has changed.</li>
+</ul>`
     }
   }
 ];
@@ -712,23 +868,29 @@ function computeAvalanche() {
   var diffEl = document.getElementById('av-diff');
   if (!t1 || !t2) return;
 
-  var d1 = sha256Compute(strToBytes(t1.value || '')).digest;
-  var d2 = sha256Compute(strToBytes(t2.value || '')).digest;
+  var algoEl = document.getElementById('av-algo');
+  var algo   = algoEl ? algoEl.value : 'sha256';
+  var computeFn = algo === 'md5' ? md5Compute
+                : algo === 'sha3' ? sha3Compute
+                : sha256Compute;
+
+  var res1 = computeFn(strToBytes(t1.value || ''));
+  var res2 = computeFn(strToBytes(t2.value || ''));
+  var d1 = res1.digest;
+  var d2 = res2.digest;
+  var totalBits = d1.length * 4; // nibbles * 4 bits
 
   var diffBits = 0;
   var html1 = '', html2 = '';
 
-  for (var i = 0; i < 64; i++) {
+  for (var i = 0; i < d1.length; i++) {
     var n1 = parseInt(d1[i], 16);
     var n2 = parseInt(d2[i], 16);
     var xr = n1 ^ n2;
-    // count bits in nibble xor
     diffBits += [0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4][xr & 0xf];
     var changed = xr !== 0;
-    var cls1 = changed ? 'av-diff' : 'av-same';
-    var cls2 = changed ? 'av-diff' : 'av-same';
-    html1 += '<span class="av-nibble ' + cls1 + '">' + d1[i] + '</span>';
-    html2 += '<span class="av-nibble ' + cls2 + '">' + d2[i] + '</span>';
+    html1 += '<span class="av-nibble ' + (changed ? 'av-diff' : 'av-same') + '">' + d1[i] + '</span>';
+    html2 += '<span class="av-nibble ' + (changed ? 'av-diff' : 'av-same') + '">' + d2[i] + '</span>';
   }
 
   if (h1) h1.innerHTML = html1;
@@ -736,8 +898,8 @@ function computeAvalanche() {
 
   if (diffEl) {
     var L = getLang();
-    var pct = ((diffBits / 256) * 100).toFixed(1);
-    diffEl.textContent = diffBits + ' / 256 ' + (L==='en' ? 'bits changed (' : 'bits cambiados (') + pct + '%)';
+    var pct = ((diffBits / totalBits) * 100).toFixed(1);
+    diffEl.textContent = diffBits + ' / ' + totalBits + ' ' + (L==='en' ? 'bits changed (' : 'bits cambiados (') + pct + '%)';
   }
 }
 
@@ -795,7 +957,36 @@ document.addEventListener('DOMContentLoaded', function() {
   var btnHash  = document.getElementById('btn-hash');
   var hashInp  = document.getElementById('hash-input');
   var keyInp   = document.getElementById('hmac-key');
-  if (btnHash)  btnHash.addEventListener('click',  computeHash);
+
+  // Btn-hash: efecto visual de cálculo antes de mostrar resultado
+  if (btnHash) {
+    var btnHashOrigText = btnHash.textContent;
+    btnHash.addEventListener('click', function() {
+      var outputEl = document.getElementById('hash-output');
+      var origBg   = btnHash.style.background;
+      // Simular procesamiento
+      btnHash.disabled  = true;
+      btnHash.textContent = getLang() === 'en' ? 'Computing…' : 'Calculando…';
+      btnHash.style.opacity = '0.7';
+      if (outputEl) {
+        outputEl.style.transition = 'opacity .1s';
+        outputEl.style.opacity    = '0.3';
+      }
+      setTimeout(function() {
+        computeHash();
+        btnHash.disabled    = false;
+        btnHash.textContent = getLang() === 'en' ? 'Compute hash' : 'Calcular hash';
+        btnHash.style.opacity = '1';
+        if (outputEl) {
+          outputEl.style.opacity = '1';
+          // Flash de confirmación
+          outputEl.style.boxShadow = '0 0 0 2px var(--accent-hash)';
+          setTimeout(function() { outputEl.style.boxShadow = ''; }, 600);
+        }
+      }, 180);
+    });
+  }
+
   if (hashInp)  hashInp.addEventListener('input',  computeHash);
   if (keyInp)   keyInp.addEventListener('input',   computeHash);
 
@@ -806,6 +997,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var el = document.getElementById(id);
     if (el) el.addEventListener('input', computeAvalanche);
   });
+  var avAlgo = document.getElementById('av-algo');
+  if (avAlgo) avAlgo.addEventListener('change', computeAvalanche);
 
   /* guide nav */
   var prev = document.getElementById('hash-guide-prev');

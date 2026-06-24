@@ -41,3 +41,8 @@ secrets.txt
 # Node (si se usa para tooling)
 node_modules/
 package-lock.json
+
+# Archivos que solo usa la IA localmente
+*.pkl
+PROJECT_KNOWLEDGE.md
+AUDITORIA_Y_PLAN.md

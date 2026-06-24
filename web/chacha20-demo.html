@@ -3,14 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Demo lab de ChaCha20-Poly1305 (RFC 8439): visualiza rondas ARX, genera keystream, verifica el tag Poly1305 y explora el efecto avalanche." />
+  <meta property="og:title" content="Demo Lab — ChaCha20-Poly1305 Visualizer" />
+  <meta property="og:description" content="Demo lab de ChaCha20-Poly1305 (RFC 8439): visualiza rondas ARX, genera keystream, verifica el tag Poly1305 y explora el efecto avalanche." />
+  <meta property="og:type" content="website" />
   <title>Demo Lab — ChaCha20-Poly1305 Visualizer</title>
   <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="boton-dubstep.css" />
   <script src="theme-switcher.js"></script>
   <script defer src="chacha20-app.js"></script>
   <script defer src="chacha20-tabs.js"></script>
   <script defer src="i18n.js"></script>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 </head>
-<body>
+<body data-module="chacha">
 
   <div class="bg-grid" aria-hidden="true"></div>
   <div class="page-shell">
@@ -26,22 +32,22 @@
           evoluciona en cada ronda ARX, como se genera el keystream y como Poly1305 produce el tag.
         </p>
       </div>
-      <div class="hero-tools">
-        <label class="lang-switch">
-          <span id="langLabel">Idioma</span>
-          <select id="langSelect">
-            <option value="es">Español</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-        <label style="display:grid;gap:6px;">
-          <span class="ascon-mlabel">Tema</span>
-          <select data-theme-select class="theme-select" style="min-width:190px;"></select>
-        </label>
+      <div class="hero-tools-v2">
+        <div>
+          <span class="ascon-mlabel" data-i18n="language">IDIOMA</span>
+          <div class="ci-tabs" data-lang-pill-container>
+            <button type="button" class="ci-tab" data-lang-pill="es" aria-selected="true">ES</button>
+            <button type="button" class="ci-tab" data-lang-pill="en"  aria-selected="false">EN</button>
+          </div>
+        </div>
+        <div>
+          <span class="ascon-mlabel" data-i18n="theme">TEMA</span>
+          <select class="ci-select" data-theme-select></select>
+        </div>
       </div>
     </header>
 
-    <main class="layout">
+    <main role="main" class="layout">
 
       <!-- ── Callout técnico ChaCha20 ── -->
       <details class="op-callout" style="--op-accent:var(--accent-chacha)">
@@ -130,7 +136,7 @@
             </div>
             <div class="result-field">
               <span class="result-label">Tag</span>
-              <span class="result-val" id="cc20Tag" style="color:var(--accent-chacha)">--</span>
+              <span class="result-val" id="cc20Tag" aria-live="polite" aria-atomic="true" style="color:var(--accent-chacha)">--</span>
             </div>
           </div>
         </div>
@@ -276,7 +282,7 @@
                          color:#000;padding:10px 20px;border-radius:8px;border:none;
                          cursor:pointer;font:inherit;font-weight:600">Comparar</button>
         </div>
-        <pre id="cc20CmpOutput" class="output" style="margin-top:1rem">--</pre>
+        <pre id="cc20CmpOutput" aria-live="polite" aria-atomic="true" class="output" style="margin-top:1rem">--</pre>
       </section>
 
       <!-- ====== APRENDER ====== -->
@@ -285,14 +291,108 @@
            data-cc20-panel="learn" hidden>
         <button type="button" class="cc20-learn-btn active"
                 data-learn-tab="guide" aria-selected="true">Guia</button>
+        <button type="button" class="cc20-learn-btn"
+                data-learn-tab="glossary" aria-selected="false">Glosario</button>
+        <button type="button" class="cc20-learn-btn"
+                data-learn-tab="rfc" aria-selected="false">Ejemplos RFC</button>
       </div>
 
+      <!-- Guia principal -->
       <section class="card" data-cc20-panel="learn" data-cc20-learn="guide"
                hidden style="grid-column:1/-1">
         <div class="section-head">
           <h2>Guia educativa ChaCha20-Poly1305</h2>
         </div>
         <div id="cc20GuideContent" class="guide-content"></div>
+      </section>
+
+      <!-- ── Glosario ChaCha20 ── -->
+      <section class="card" data-cc20-panel="learn" data-cc20-learn="glossary"
+               hidden style="grid-column:1/-1">
+        <div class="section-head">
+          <h2>Glosario ChaCha20-Poly1305</h2>
+          <div class="chip-row">
+            <span class="chip" style="color:var(--accent-chacha);border-color:var(--accent-chacha-border)">ARX</span>
+            <span class="chip" style="color:var(--accent-chacha);border-color:var(--accent-chacha-border)">AEAD</span>
+            <span class="chip" style="color:var(--accent-chacha);border-color:var(--accent-chacha-border)">Poly1305</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:.75rem">
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:14px">
+            <span style="display:block;font-size:.78rem;font-weight:700;color:var(--accent-chacha);margin-bottom:4px">ARX</span>
+            <span style="font-size:.83rem">Add-Rotate-XOR. Primitiva de mezcla sin tablas de lookup — resistente a timing/cache attacks. La base de cada quarter round.</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:14px">
+            <span style="display:block;font-size:.78rem;font-weight:700;color:var(--accent-chacha);margin-bottom:4px">Quarter Round</span>
+            <span style="font-size:.83rem">Unidad básica: 4 operaciones ARX sobre 4 palabras de 32 bits (a, b, c, d). Un bloque de 20 rondas ejecuta 8 quarter-rounds por ronda.</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:14px">
+            <span style="display:block;font-size:.78rem;font-weight:700;color:var(--accent-chacha);margin-bottom:4px">Estado inicial</span>
+            <span style="font-size:.83rem">Matriz 4x4 de 32 bits: constante "expand 32-byte k" (128 bits) + clave (256 bits) + contador (32 bits) + nonce (96 bits).</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:14px">
+            <span style="display:block;font-size:.78rem;font-weight:700;color:var(--accent-chacha);margin-bottom:4px">Nonce</span>
+            <span style="font-size:.83rem">96 bits (12 bytes). Numero de uso unico por (clave, mensaje). Reusar nonce con la misma clave permite recuperar PT1 XOR PT2.</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:14px">
+            <span style="display:block;font-size:.78rem;font-weight:700;color:var(--accent-chacha);margin-bottom:4px">Poly1305</span>
+            <span style="font-size:.83rem">MAC sobre GF(2^130-5). Tag de 128 bits cubre AAD + ciphertext. Derivado del bloque ChaCha20 con contador=0. No reutilizable con la misma clave.</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:14px">
+            <span style="display:block;font-size:.78rem;font-weight:700;color:var(--accent-chacha);margin-bottom:4px">0x1303</span>
+            <span style="font-size:.83rem">ID de cipher suite TLS 1.3 para TLS_CHACHA20_POLY1305_SHA256. Visible en ClientHello/ServerHello TLS y en el campo de cipher suites del hash JA3.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Ejemplos RFC ── -->
+      <section class="card" data-cc20-panel="learn" data-cc20-learn="rfc"
+               hidden style="grid-column:1/-1">
+        <div class="section-head">
+          <h2>Vectores RFC 8439 (Test Vectors)</h2>
+          <div class="chip-row">
+            <span class="chip" style="color:var(--accent-chacha);border-color:var(--accent-chacha-border)">ChaCha20</span>
+            <span class="chip" style="color:var(--accent-chacha);border-color:var(--accent-chacha-border)">Poly1305</span>
+            <span class="chip" style="color:var(--accent-chacha);border-color:var(--accent-chacha-border)">AEAD</span>
+          </div>
+        </div>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">
+          Vectores del RFC 8439. Usa la pestana <strong>Practica</strong> con estos valores para verificar la implementacion.
+        </p>
+        <div class="diagram-box" style="margin-bottom:1rem">
+── RFC 8439 §2.1.1 — Quarter Round de prueba ──────────────
+a = 11111111  b = 01020304  c = 9b8d6f43  d = 01234567
+→ despues de QR:
+a = ea2a92f4  b = cb1cf8ce  c = 4581472e  d = 5881c4bb
+
+── RFC 8439 §2.3.2 — ChaCha20 Block Function ──────────────
+Key:    000102030405060708090a0b0c0d0e0f
+        101112131415161718191a1b1c1d1e1f
+Nonce:  000000090000004a00000000
+Counter: 1
+Keystream (primeros 64 bytes):
+10 f1 e7 e4 d1 3b 59 15  50 0f dd 1f a3 20 71 c4
+c7 d1 f4 c7 33 c0 68 03  04 22 aa 9a c3 d4 6c 4e
+d2 82 64 46 07 9f aa 09  14 c2 d7 05 d9 8b 02 a2
+b5 12 9c d1 de 16 4e b9  cb d0 83 e8 a2 50 3c 4e
+
+── RFC 8439 §2.6.2 — AEAD completo ────────────────────────
+Key:     80 81 82 83 84 85 86 87 88 89 8a 8b 8c 8d 8e 8f
+         90 91 92 93 94 95 96 97 98 99 9a 9b 9c 9d 9e 9f
+Nonce:   07 00 00 00 40 41 42 43 44 45 46 47
+AAD:     50 51 52 53 c0 c1 c2 c3 c4 c5 c6 c7
+PT:      "Ladies and Gentlemen of the class of '99..."
+Tag:     1a e1 0b 59 4f 09 e2 6a  7e 90 2e cb d0 60 06 91</div>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">🔎</span>
+            <span><strong>Verificar AEAD:</strong> carga el RFC 8439 con el boton "Cargar RFC 8439" en la pestana Practica. El Tag debe coincidir con el valor de arriba.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">⚠️</span>
+            <span><strong>Nonce reuse:</strong> cifra dos plaintexts con la misma key y nonce → CT1 XOR CT2 = PT1 XOR PT2. El cifrado se rompe. Comproba en la pestana Comparar.</span>
+          </div>
+        </div>
       </section>
 
     </main>

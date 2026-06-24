@@ -3,10 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Aprende AES con 9 slides interactivos: SubBytes, ShiftRows, MixColumns, Key Schedule, efecto avalanche y análisis SOC/DFIR para analistas de seguridad." />
+  <meta property="og:title" content="Teoría AES — AES Visualizer" />
+  <meta property="og:description" content="Aprende AES con 9 slides interactivos: SubBytes, ShiftRows, MixColumns, Key Schedule, efecto avalanche y análisis SOC/DFIR para analistas de seguridad." />
+  <meta property="og:type" content="website" />
   <title>Teoría AES — AES Visualizer</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="boton-dubstep.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous" />
+  <!-- theme-switcher SIN defer: aplica tema antes del primer paint -->
+  <script src="theme-switcher.js"></script>
   <script defer src="i18n.js"></script>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 </head>
 <body>
 
@@ -14,7 +22,26 @@
 
   <div class="slides-shell">
 
-    <a href="index.html" class="section-back" style="position:relative;z-index:1">← Inicio</a>
+    <!-- ══════════════════════════ HEADER ══════════════════════════ -->
+    <header style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;padding:8px 0 20px;border-bottom:1px solid var(--line)">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <a href="index.html" class="section-back">← Inicio</a>
+        <div class="hero-badge">AES · Teoría</div>
+      </div>
+      <div class="hero-tools-v2">
+        <div>
+          <span class="ascon-mlabel" data-i18n="language">IDIOMA</span>
+          <div class="ci-tabs" data-lang-pill-container>
+            <button type="button" class="ci-tab" data-lang-pill="es" aria-selected="true">ES</button>
+            <button type="button" class="ci-tab" data-lang-pill="en"  aria-selected="false">EN</button>
+          </div>
+        </div>
+        <div>
+          <span class="ascon-mlabel" data-i18n="theme">TEMA</span>
+          <select class="ci-select" data-theme-select></select>
+        </div>
+      </div>
+    </header>
 
     <!-- ════════════════════════════════════
          SLIDE 1 — ¿Qué es AES?
@@ -384,72 +411,139 @@ Ciphertext (128 bits)</div>
       </div>
     </section>
 
-    <!-- ── Navegación de slides ── -->
-    <nav class="slide-nav" aria-label="Navegación de diapositivas">
-      <button class="slide-nav-btn" id="btn-prev" onclick="changeSlide(-1)" disabled>← Anterior</button>
-      <div class="slide-progress" id="dots"></div>
-      <button class="slide-nav-btn primary" id="btn-next" onclick="changeSlide(1)">Siguiente →</button>
-    </nav>
+    <!-- ════════════════════════════════════
+         SLIDE 9 — AES en el SOC y DFIR
+    ════════════════════════════════════ -->
+    <section class="slide" id="slide-9">
+      <div class="slide-header">
+        <span class="slide-num">09 / 09</span>
+        <h2>AES en el SOC y DFIR</h2>
+      </div>
+      <div class="slide-body">
+        <div class="slide-text">
+          <p>
+            Como analista SOC, AES aparece constantemente en tráfico TLS, ransomware,
+            cifrado de disco y protocolos de red. Saber leer las cipher suites es la primera
+            habilidad práctica.
+          </p>
+        </div>
+        <div class="diagram-box">
+── Cipher suites TLS (leer el sufijo) ──────────────────────
+TLS_AES_128_GCM_SHA256          ← TLS 1.3, GCM (AEAD)  ✅
+TLS_AES_256_GCM_SHA384          ← TLS 1.3, GCM (AEAD)  ✅
+TLS_RSA_WITH_AES_128_CBC_SHA    ← TLS 1.2, CBC + SHA-1 ⚠️
+TLS_RSA_WITH_AES_256_CBC_SHA256 ← TLS 1.2, CBC + SHA-2 ⚠️
+TLS_RSA_WITH_AES_128_ECB        ← ECB sin IV           ❌
 
-  </div>
+── Flags de debilidad ───────────────────────────────────────
+CBC sin AEAD → vulnerable
+ECB detectado en captures → reportar como critical
+RSA sin PFS → forward secrecy ausente
+CBC-SHA (vs GCM-SHA256) → sin autenticación nativa
 
-  <script>
-    const TOTAL = 8;
-    let current = 1;
+── Detectar AES en ransomware con YARA ──────────────────────
+rule AES_KeySchedule {
+  strings:
+    $rcon = { 01 02 04 08 10 20 40 80 1B 36 }
+    $sbox = { 63 7C 77 7B F2 6B 6F C5 30 01 67 2B }
+  condition:
+    any of them
+}
+</div>
+        <div class="key-points">
+          <div class="key-point">
+            <span class="key-point-icon">🔍</span>
+            <span><strong>Revisar cipher suites:</strong> en Wireshark, el campo <em>Cipher Suite</em> del ServerHello revela el modo exacto. Suites con CBC o RSA-sin-PFS son hallazgos típicos de pentesting y auditorías de seguridad.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">🦠</span>
+            <span><strong>Forensia de ransomware:</strong> la clave AES suele quedar en memoria durante el cifrado. Volatility (<code>malfind</code>) y YARA sobre dumps de proceso pueden extraerla si actuás antes del reboot.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">📡</span>
+            <span><strong>Zeek / Suricata:</strong> <code>ssl.log</code> en Zeek registra cipher, versión y JA3. Reglas Sigma sobre <code>ssl_cipher LIKE '%CBC%SHA'</code> disparan alertas de configuración débil en tu SIEM.</span>
+          </div>
+          <div class="key-point">
+            <span class="key-point-icon">🖥️</span>
+            <span>Observá el efecto avalancha en vivo en el <a href="aes-demo.html"><strong>Demo Lab AES</strong></a>: ejecutá dos cifrados con claves que difieran en 1 bit y comparalos.</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    // Construir dots
-    const dotsEl = document.getElementById('dots');
-    for (let i = 1; i <= TOTAL; i++) {
-      const d = document.createElement('button');
+  <!-- ══════════════════════════ NAV ══════════════════════════ -->
+  <nav class="slide-nav" aria-label="Navegación de slides">
+    <button class="slide-nav-btn" id="prevBtn" disabled aria-label="Slide anterior">&#8592;</button>
+    <div class="slide-dots" id="slideDots" aria-hidden="true"></div>
+    <button class="slide-nav-btn" id="nextBtn" aria-label="Slide siguiente">&#8594;</button>
+  </nav>
+
+</div><!-- /.slides-shell -->
+
+<script>
+(function() {
+  'use strict';
+  var TOTAL = 9;
+  var cur = 1;
+  var slides = Array.from(document.querySelectorAll('.slide'));
+  var dots   = [];
+
+  function buildDots() {
+    var container = document.getElementById('slideDots');
+    if (!container) return;
+    for (var i = 1; i <= TOTAL; i++) {
+      var d = document.createElement('button');
       d.className = 'slide-dot' + (i === 1 ? ' active' : '');
-      d.setAttribute('aria-label', `Diapositiva ${i}`);
-      d.addEventListener('click', () => goTo(i));
-      dotsEl.appendChild(d);
+      d.setAttribute('aria-label', 'Slide ' + i);
+      d.dataset.n = i;
+      d.addEventListener('click', function() { goTo(+this.dataset.n); });
+      container.appendChild(d);
+      dots.push(d);
     }
+  }
 
-    function goTo(n) {
-      document.getElementById(`slide-${current}`).classList.remove('active');
-      dotsEl.children[current - 1].classList.remove('active');
-      current = Math.max(1, Math.min(TOTAL, n));
-      document.getElementById(`slide-${current}`).classList.add('active');
-      dotsEl.children[current - 1].classList.add('active');
-      document.getElementById('btn-prev').disabled = current === 1;
-      document.getElementById('btn-next').disabled = current === TOTAL;
-      document.getElementById('btn-next').textContent =
-        current === TOTAL ? '↩ Demo Lab' : 'Siguiente →';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function changeSlide(dir) {
-      if (dir === 1 && current === TOTAL) {
+  function goTo(n) {
+    n = Math.max(1, Math.min(TOTAL, n));
+    slides.forEach(function(s) {
+      var on = s.id === 'slide-' + n;
+      s.classList.toggle('active', on);
+      s.setAttribute('aria-hidden', on ? 'false' : 'true');
+      if (on) s.setAttribute('aria-current', 'step');
+      else s.removeAttribute('aria-current');
+    });
+    dots.forEach(function(d, i) {
+      d.classList.toggle('active', i + 1 === n);
+    });
+    document.getElementById('prevBtn').disabled = n <= 1;
+    document.getElementById('nextBtn').disabled = n >= TOTAL;
+    cur = n;
+    if (n === TOTAL) {
+      document.getElementById('nextBtn').addEventListener('click', function onLast() {
         window.location.href = 'aes-demo.html';
-        return;
-      }
-      goTo(current + dir);
+        this.removeEventListener('click', onLast);
+      }, { once: true });
     }
+  }
 
-    // Teclado: ← →
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
-      if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+  document.addEventListener('DOMContentLoaded', function() {
+    buildDots();
+    goTo(1);
+    document.getElementById('prevBtn').addEventListener('click', function() { goTo(cur - 1); });
+    document.getElementById('nextBtn').addEventListener('click', function() { goTo(cur + 1); });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowRight') goTo(cur + 1);
+      if (e.key === 'ArrowLeft')  goTo(cur - 1);
     });
-  </script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous" defer></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof renderMathInElement === 'function') {
-        renderMathInElement(document.body, {
-          delimiters: [
-            {left: '$$', right: '$$', display: true},
-            {left: '\\(', right: '\\)', display: false}
-          ],
-          throwOnError: false
-        });
-      }
+    // Touch swipe
+    var sx = 0;
+    document.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener('touchend', function(e) {
+      var dx = sx - e.changedTouches[0].clientX;
+      if (Math.abs(dx) > 40) goTo(dx > 0 ? cur + 1 : cur - 1);
     });
-  </script>
+  });
+}());
+</script>
 
 </body>
 </html>

@@ -46,6 +46,13 @@ function cc20SwitchTab(clickedTab) {
     cc20GuideOn = false;
   }
   cc20RenderTabs();
+  // Scroll suave cuando se muestra el panel Aprender
+  if (clickedTab === "learn" && cc20GuideOn) {
+    requestAnimationFrame(function() {
+      var el = document.querySelector("[data-cc20-panel='learn']");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 }
 
 function cc20SetLearnTab(active) {

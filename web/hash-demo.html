@@ -3,8 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Demo lab de hashing: calcula MD5, SHA-256, SHA-3 y HMAC en tiempo real. Efecto avalanche multi-algoritmo y ejemplos forenses listos para cargar." />
+  <meta property="og:title" content="Hash Lab — Hashing e Integridad" />
+  <meta property="og:description" content="Demo lab de hashing: calcula MD5, SHA-256, SHA-3 y HMAC en tiempo real. Efecto avalanche multi-algoritmo y ejemplos forenses listos para cargar." />
+  <meta property="og:type" content="website" />
   <title>Hash Lab — Hashing e Integridad</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="boton-dubstep.css">
   <script src="theme-switcher.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" crossorigin="anonymous" />
   <script defer src="hash-app.js"></script>
@@ -88,13 +93,40 @@
     .guide-num { color: var(--muted); font-size: .75rem; min-width: 18px; padding-top: 1px; }
     .guide-item.active .guide-num { color: var(--accent-hash); }
 
+    /* ── Guía — fact cards ──────────────────── */
+    .hg-fact-row { display:flex;gap:8px;flex-wrap:wrap;margin:10px 0; }
+    .hg-fact { background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:.82rem;display:flex;flex-direction:column;gap:3px; }
+    .hg-fact code { font-family:var(--mono);color:var(--accent-hash); }
+    .hg-fact-lbl { font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted); }
+    .hg-fact--danger { border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.06); }
+    .hg-fact--danger .hg-fact-lbl { color:#f87171; }
+    .hg-fact--ok     { border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.06); }
+    .hg-fact--ok     .hg-fact-lbl { color:var(--accent-hash); }
+    .hg-mono {
+      background:rgba(0,0,0,.22);border:1px solid var(--line);
+      border-left:3px solid var(--accent-hash);border-radius:6px;
+      padding:10px 14px;font-family:var(--mono);font-size:.76rem;
+      white-space:pre-wrap;color:var(--accent-hash);margin:10px 0;line-height:1.7;
+    }
+    .hg-ul { margin:10px 0;padding-left:1.1rem;display:flex;flex-direction:column;gap:6px; }
+    .hg-ul li { font-size:.86rem;line-height:1.65; }
+    .hg-callout {
+      display:flex;gap:10px;align-items:flex-start;
+      background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);
+      border-radius:8px;padding:10px 14px;margin-top:12px;font-size:.85rem;
+    }
+    .hg-callout--warn { background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.25); }
+    .hg-callout-icon { font-size:1rem;flex-shrink:0;margin-top:1px; }
+    #hash-guide-body p { margin-bottom:8px; }
+
     /* ── Avalancha ──────────────────────────── */
     .av-nibble { display: inline; }
     .av-same   { color: var(--muted); }
     .av-diff   { color: #f87171; background: rgba(248,113,113,.15); border-radius: 2px; font-weight: 700; }
   </style>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 </head>
-<body>
+<body data-module="hash">
 
 <div class="bg-grid" aria-hidden="true"></div>
 <div class="page-shell">
@@ -112,22 +144,22 @@
         calcula, visualiza cada paso y comprende su rol en SOC y DFIR.
       </p>
     </div>
-    <div class="hero-tools">
-      <label class="lang-switch">
-        <span id="langLabel">Idioma</span>
-        <select id="langSelect">
-          <option value="es">Español</option>
-          <option value="en">English</option>
-        </select>
-      </label>
-      <label style="display:grid;gap:6px;">
-        <span class="ascon-mlabel">Tema</span>
-        <select data-theme-select class="theme-select" style="min-width:190px;"></select>
-      </label>
+    <div class="hero-tools-v2">
+      <div>
+        <span class="ascon-mlabel" data-i18n="language">IDIOMA</span>
+        <div class="ci-tabs" data-lang-pill-container>
+          <button type="button" class="ci-tab" data-lang-pill="es" aria-selected="true">ES</button>
+          <button type="button" class="ci-tab" data-lang-pill="en"  aria-selected="false">EN</button>
+        </div>
+      </div>
+      <div>
+        <span class="ascon-mlabel" data-i18n="theme">TEMA</span>
+        <select class="ci-select" data-theme-select></select>
+      </div>
     </div>
   </header>
 
-  <main class="layout">
+  <main role="main" class="layout">
 
     <!-- ── Callout técnico Hashing ── -->
     <details class="op-callout" style="--op-accent:var(--accent-hash)">
@@ -148,7 +180,7 @@
 
     <!-- ── Tabs ── -->
     <nav style="grid-column:1/-1;display:flex;border-bottom:1px solid var(--line);margin-bottom:4px"
-         role="tablist">
+         role="tablist" aria-label="Secciones principales">
       <button class="hash-tab-btn active" data-tab="studio"   type="button">Studio</button>
       <button class="hash-tab-btn"        data-tab="guia"     type="button" id="tab-btn-guia">Guía</button>
       <button class="hash-tab-btn"        data-tab="comparar" type="button" id="tab-btn-comparar">Avalancha</button>
@@ -187,6 +219,27 @@
               <input id="hash-input" type="text" value="hello world" spellcheck="false">
             </label>
 
+            <!-- Cargar ejemplos rápidos -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span style="font-size:.74rem;color:var(--muted);align-self:center">Ejemplos:</span>
+              <button type="button" class="ci-btn ci-btn--ghost" style="font-size:.74rem;padding:3px 10px"
+                onclick="document.getElementById('hash-input').value='The quick brown fox jumps over the lazy dog';document.getElementById('btn-hash').click()">
+                Clásico
+              </button>
+              <button type="button" class="ci-btn ci-btn--ghost" style="font-size:.74rem;padding:3px 10px"
+                onclick="document.getElementById('hash-input').value='GET /api/v1/users HTTP/1.1\r\nHost: target.internal\r\nAuthorization: Bearer eyJhbGciOiJIUzI1NiJ9';document.getElementById('btn-hash').click()">
+                HTTP header
+              </button>
+              <button type="button" class="ci-btn ci-btn--ghost" style="font-size:.74rem;padding:3px 10px"
+                onclick="document.getElementById('hash-input').value='C:\\Windows\\System32\\cmd.exe';document.getElementById('btn-hash').click()">
+                IOC path
+              </button>
+              <button type="button" class="ci-btn ci-btn--ghost" style="font-size:.74rem;padding:3px 10px"
+                onclick="document.getElementById('hash-input').value='';document.getElementById('btn-hash').click()">
+                Vacío
+              </button>
+            </div>
+
             <button id="btn-hash" type="button"
                     style="background:var(--accent-hash);color:#000;font-weight:700;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font:inherit">
               Calcular hash
@@ -197,7 +250,7 @@
           <!-- Resultado -->
           <div style="margin-top:20px">
             <p style="font-size:.78rem;color:var(--muted);margin-bottom:5px" id="lbl-output">Resultado</p>
-            <code id="hash-output"
+            <code id="hash-output" aria-live="polite" aria-atomic="true"
                   style="display:block;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:8px;padding:14px;font-family:var(--mono);font-size:.8rem;word-break:break-all;color:var(--accent-hash);min-height:48px">
               —
             </code>
@@ -261,7 +314,15 @@
     ══════════════════════════════════════════ -->
     <section class="hash-tab-panel" id="tab-comparar" hidden style="grid-column:1/-1">
       <div class="card">
-        <h2 id="lbl-av-title" style="margin-bottom:8px">Efecto Avalancha — SHA-256</h2>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+          <h2 id="lbl-av-title" style="margin:0">Efecto Avalancha</h2>
+          <select id="av-algo" class="ci-select"
+                  style="width:auto;padding:5px 10px;font-size:.82rem">
+            <option value="md5">MD5 (128 bits)</option>
+            <option value="sha256" selected>SHA-256 (256 bits)</option>
+            <option value="sha3">SHA-3-256 (256 bits)</option>
+          </select>
+        </div>
         <p id="lbl-av-desc" style="color:var(--muted);font-size:.88rem;margin-bottom:20px">
           Cambia 1 carácter entre A y B y observa cuántos bits del digest cambian.
           Un hash seguro modifica ~50% de los bits ante cualquier diferencia mínima.
@@ -272,7 +333,7 @@
           <div>
             <span id="lbl-av1" style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px">Texto A</span>
             <input id="av-text1" type="text" value="hello" spellcheck="false">
-            <div style="margin-top:8px;font-size:.73rem;color:var(--muted);margin-bottom:3px" id="lbl-hash-a">SHA-256(A):</div>
+            <div style="margin-top:8px;font-size:.73rem;color:var(--muted);margin-bottom:3px" id="lbl-hash-a">Hash(A):</div>
             <div id="av-hash1"
                  style="font-family:var(--mono);font-size:.72rem;word-break:break-all;background:rgba(0,0,0,.2);padding:10px 12px;border-radius:6px;line-height:1.9;min-height:52px">
               —
@@ -282,7 +343,7 @@
           <div>
             <span id="lbl-av2" style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px">Texto B (+1 bit)</span>
             <input id="av-text2" type="text" value="Hello" spellcheck="false">
-            <div style="margin-top:8px;font-size:.73rem;color:var(--muted);margin-bottom:3px" id="lbl-hash-b">SHA-256(B):</div>
+            <div style="margin-top:8px;font-size:.73rem;color:var(--muted);margin-bottom:3px" id="lbl-hash-b">Hash(B):</div>
             <div id="av-hash2"
                  style="font-family:var(--mono);font-size:.72rem;word-break:break-all;background:rgba(0,0,0,.2);padding:10px 12px;border-radius:6px;line-height:1.9;min-height:52px">
               —
@@ -293,7 +354,7 @@
         <!-- Contador de bits -->
         <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
           <span id="lbl-av-diff" style="color:var(--muted);font-size:.85rem">Bits diferentes:</span>
-          <strong id="av-diff" style="color:var(--accent-hash);font-size:1.1rem">—</strong>
+          <strong id="av-diff" aria-live="polite" aria-atomic="true" style="color:var(--accent-hash);font-size:1.1rem">—</strong>
           <span style="flex:1"></span>
           <button id="btn-av" type="button"
                   style="background:var(--accent-hash);color:#000;font-weight:700;border:none;padding:7px 18px;border-radius:7px;cursor:pointer;font:inherit;font-size:.85rem">
@@ -307,23 +368,42 @@
       </div>
     </section>
 
+    <!-- ══════════════════════════════════════
+         PANEL APRENDER
+    ══════════════════════════════════════════ -->
+    <section class="hash-tab-panel" id="tab-aprender" hidden style="grid-column:1/-1">
+      <div class="card">
+        <div style="display:flex;border-bottom:1px solid var(--line);margin-bottom:1rem;gap:4px">
+          <button type="button" class="hash-tab-btn active" data-hash-learn="guide" style="font-size:.82rem;padding:8px 14px">
+            Guía
+          </button>
+        </div>
+        <div id="hash-guide-panel">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start">
+            <!-- Índice -->
+            <nav id="hash-guide-index" style="display:grid;gap:4px"></nav>
+            <!-- Contenido -->
+            <div id="hash-guide-body" style="min-height:220px"></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--line)">
+            <button id="hash-guide-prev" type="button"
+                    style="background:none;border:1px solid var(--line);color:var(--text);padding:7px 16px;border-radius:6px;cursor:pointer;font:inherit">
+              ←
+            </button>
+            <span id="hash-guide-prog" style="color:var(--muted);font-size:.8rem">1 / 8</span>
+            <button id="hash-guide-next" type="button"
+                    style="background:none;border:1px solid var(--line);color:var(--text);padding:7px 16px;border-radius:6px;cursor:pointer;font:inherit">
+              →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" crossorigin="anonymous" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" crossorigin="anonymous" defer></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof renderMathInElement === 'function') {
-        renderMathInElement(document.body, {
-          delimiters: [
-            {left: '$$', right: '$$', display: true},
-            {left: '\\(', right: '\\)', display: false}
-          ],
-          throwOnError: false
-        });
-      }
-    });
-  </script>
 </body>
 </html>

@@ -588,14 +588,6 @@ h3 {
 .card-grid .card:hover::after { opacity: 1; }
 
 .card-icon { font-size: 2rem; line-height: 1; position: relative; z-index: 1; }
-.card-num  {
-  font-family: var(--mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.12em;
-  color: var(--muted);
-  position: relative;
-  z-index: 1;
-}
 .card-label {
   font-size: 0.9rem;
   font-weight: 500;
@@ -869,59 +861,6 @@ h3 {
   color: var(--accent-ascon);
 }
 
-/* ── Fases ── */
-.ascon-phases { display: grid; gap: 0.75rem; }
-.ascon-phase-card {
-  background: var(--bg2);
-  border: 1px solid var(--accent-ascon-border);
-  border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  cursor: pointer;
-}
-.ascon-phase-card.active {
-  border-color: var(--accent-ascon);
-  box-shadow: 0 0 0 2px var(--accent-ascon-glow);
-}
-.ascon-phase-header {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.6rem;
-}
-.ascon-phase-icon { font-size: 1.2rem; }
-.ascon-phase-title {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--accent-ascon);
-}
-.ascon-phase-body { font-size: 0.82rem; line-height: 1.65; }
-.phase-state-label {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--muted);
-  margin: 0.4rem 0 0.2rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.phase-note {
-  color: var(--muted);
-  font-style: italic;
-  font-size: 0.78rem;
-  margin: 0.3rem 0;
-}
-.ascon-phase-state { display: grid; gap: 3px; }
-.ascon-tag-box {
-  margin-top: 0.5rem;
-  padding: 0.65rem 1rem;
-  background: rgba(168, 85, 247, 0.08);
-  border: 1px solid var(--accent-ascon-border);
-  border-radius: 8px;
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  color: var(--accent-ascon);
-  word-break: break-all;
-}
 
 /* ── Error banner ── */
 .error-banner {
@@ -935,11 +874,6 @@ h3 {
 }
 
 /* ── Result panel ── */
-.result-row {
-  display: grid;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
 .result-field {
   display: flex;
   gap: 0.6rem;
@@ -1034,6 +968,12 @@ h3 {
 .slides-shell--chacha .diagram-box      { color: var(--accent-chacha); background: rgba(245,158,11,0.04); border-color: var(--accent-chacha-border); }
 .slides-shell--chacha .key-point strong { color: var(--accent-chacha); }
 .slides-shell--chacha .hero-badge       { color: var(--accent-chacha); border-color: var(--accent-chacha-border); background: var(--accent-chacha-glow); }
+.slides-shell--chacha .slide-nav-btn    { color: var(--accent-chacha); border-color: var(--accent-chacha-border); }
+.slides-shell--chacha .slide-nav-btn:hover:not(:disabled) { background: var(--accent-chacha); color: #000; }
+.slides-shell--chacha .slide-dot        { border-color: var(--accent-chacha-border); }
+.slides-shell--chacha .slide-dot.active { background: var(--accent-chacha); }
+.slides-shell--chacha .section-back:hover { color: var(--accent-chacha); }
+.slides-shell--chacha .slide-header     { border-color: var(--accent-chacha-border); }
 
 /* ── Matriz 4×4 ChaCha20 ── */
 .chacha-matrix {
@@ -1078,42 +1018,6 @@ h3 {
 .chacha-cell--key    { color: #34d399; } /* verde — key words */
 .chacha-cell--nonce  { color: #f6c177; } /* naranja — counter + nonce */
 
-/* ── Tab buttons ChaCha20 ── */
-.chacha-tab-btn {
-  background: none;
-  border: none;
-  padding: 10px 18px;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--muted);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: color 0.2s, border-color 0.2s;
-  letter-spacing: 0.04em;
-}
-.chacha-tab-btn:hover { color: var(--text); }
-.chacha-tab-btn.active {
-  color: var(--accent-chacha);
-  border-bottom-color: var(--accent-chacha);
-}
-.chacha-tab-btn.guide-overlay {
-  color: var(--accent-chacha);
-  border-bottom: 2px dashed var(--accent-chacha);
-  opacity: 0.75;
-}
-.chacha-learn-btn {
-  background: none;
-  border: none;
-  padding: 7px 14px;
-  font: inherit;
-  font-size: 0.8rem;
-  color: var(--muted);
-  cursor: pointer;
-  border-radius: 6px;
-  transition: color 0.2s, background 0.2s;
-}
-.chacha-learn-btn:hover  { color: var(--text); background: rgba(245,158,11,0.08); }
-.chacha-learn-btn.active { color: var(--accent-chacha); background: rgba(245,158,11,0.14); }
 
 /* ══════════════════════════════════════════════
    Módulo 4 — Hashing e Integridad (emerald)
@@ -1144,6 +1048,12 @@ h3 {
 .slides-shell--hash .diagram-box      { color: var(--accent-hash); background: rgba(16,185,129,0.04); border-color: var(--accent-hash-border); }
 .slides-shell--hash .key-point strong { color: var(--accent-hash); }
 .slides-shell--hash .hero-badge       { color: var(--accent-hash); border-color: var(--accent-hash-border); background: var(--accent-hash-glow); }
+.slides-shell--hash .slide-nav-btn    { color: var(--accent-hash); border-color: var(--accent-hash-border); }
+.slides-shell--hash .slide-nav-btn:hover:not(:disabled) { background: var(--accent-hash); color: #fff; }
+.slides-shell--hash .slide-dot        { border-color: var(--accent-hash-border); }
+.slides-shell--hash .slide-dot.active { background: var(--accent-hash); }
+.slides-shell--hash .section-back:hover { color: var(--accent-hash); }
+.slides-shell--hash .slide-header     { border-color: var(--accent-hash-border); }
 
 /* ── Callout técnico / operativo (desplegable) ────────────── */
 .op-callout {
@@ -1494,95 +1404,10 @@ h3 {
   flex-wrap: wrap;
 }
 
-/* ── ci-badge: badge de variante en el hero ──────────────── */
-.ci-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.05);
-  font-size: .72rem;
-  font-family: var(--mono);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--muted);
-}
-.ci-badge--ascon {
-  border-color: var(--accent-ascon-border);
-  background: var(--accent-ascon-glow);
-  color: var(--accent-ascon);
-}
-
-/* ── ci-card: tarjeta de contenido principal ─────────────── */
-.ci-card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.ci-card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
-}
-.ci-card__title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-  letter-spacing: -.01em;
-}
-
-/* ── ci-field: wrapper de label + input ──────────────────── */
-.ci-field {
-  display: grid;
-  gap: 6px;
-}
-.ci-field--mono .ci-field__label,
-.ci-field--mono .ci-input {
-  font-family: var(--mono);
-}
-.ci-field__label {
-  font-size: .75rem;
-  font-weight: 500;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .1em;
-}
-
-/* ── ci-input: campo de texto ─────────────────────────────── */
-.ci-input {
-  width: 100%;
-  padding: 9px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.04);
-  color: var(--text);
-  font: inherit;
-  font-size: .88rem;
-  outline: none;
-  transition: border-color .18s, background .18s;
-  box-sizing: border-box;
-}
-.ci-input:focus {
-  border-color: var(--accent);
-  background: rgba(0,212,255,.04);
-}
-.ci-input--mono { font-family: var(--mono); }
-
-/* ── ci-btn: botón base ───────────────────────────────────── */
+/* ── ci-btn: botón genérico del CI Design System ──────────── */
 .ci-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
   padding: 8px 16px;
   border-radius: 8px;
@@ -1590,98 +1415,22 @@ h3 {
   background: rgba(255,255,255,.04);
   color: var(--text);
   font: inherit;
-  font-size: .85rem;
-  font-weight: 500;
   cursor: pointer;
-  transition: border-color .18s, background .18s, color .18s;
+  outline: none;
+  transition: background .15s, border-color .15s, color .15s;
   white-space: nowrap;
 }
 .ci-btn:hover {
-  border-color: rgba(255,255,255,.2);
   background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.18);
 }
-.ci-btn:disabled {
-  opacity: .4;
-  cursor: not-allowed;
-}
-.ci-btn--primary {
-  border-color: var(--accent);
-  background: rgba(0,212,255,.10);
-  color: var(--accent);
-  font-weight: 600;
-}
-.ci-btn--primary:hover {
-  background: rgba(0,212,255,.18);
-}
-
-/* ── ci-pill: badge de estado inline ─────────────────────── */
-.ci-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.04);
-  font-size: .75rem;
-  font-family: var(--mono);
+.ci-btn--ghost {
+  background: transparent;
+  border-color: var(--line);
   color: var(--muted);
 }
-.ci-pill--ok {
-  border-color: rgba(74,222,128,.4);
-  background: rgba(74,222,128,.08);
-  color: #4ade80;
+.ci-btn--ghost:hover {
+  color: var(--text);
+  border-color: rgba(255,255,255,.25);
+  background: rgba(255,255,255,.05);
 }
-.ci-pill--active {
-  border-color: var(--accent-ascon-border);
-  background: var(--accent-ascon-glow);
-  color: var(--accent-ascon);
-}
-.ci-pill__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  flex-shrink: 0;
-}
-
-/* ── ci-callout: panel desplegable de contexto SOC ──────── */
-.ci-callout {
-  border: 1px solid var(--op-accent, var(--accent));
-  border-radius: 10px;
-  background: rgba(255,255,255,.02);
-  padding: 0;
-  overflow: hidden;
-}
-.ci-callout > summary {
-  padding: 10px 16px;
-  font-size: .85rem;
-  font-weight: 600;
-  color: var(--op-accent, var(--accent));
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-}
-.ci-callout > summary::-webkit-details-marker { display: none; }
-.ci-callout > summary::before {
-  content: '▶ ';
-  font-size: .7em;
-  transition: transform .18s;
-}
-.ci-callout[open] > summary::before { content: '▼ '; }
-.ci-callout__body {
-  padding: 0 16px 14px;
-  border-top: 1px solid var(--line);
-}
-.ci-callout__list {
-  margin: 10px 0 0;
-  padding-left: 1.2em;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: .85rem;
-  color: var(--muted);
-  line-height: 1.6;
-}
-.ci-callout__list li { list-style: disc; }
-.ci-callout__list strong { color: var(--text); }
